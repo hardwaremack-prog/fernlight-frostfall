@@ -115,6 +115,30 @@ button[aria-pressed="true"]{background:rgba(255,148,64,.16);border-color:rgba(25
 #endcard button{margin-top:22px}
 body.survive #bTour,body.survive #bExplore,body.survive #tod,body.survive #clock{display:none}
 body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{display:none}
+#waterfx{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0;transition:opacity .6s;background:linear-gradient(to top,rgba(40,90,120,.55),rgba(40,90,120,.12) 45%,rgba(40,90,120,0) 70%)}
+#radio{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(70px + env(safe-area-inset-bottom,0px));z-index:7;width:min(600px,calc(100vw - 32px))}
+#radio .rp{background:linear-gradient(#2a2c30,#1c1e21);border:1px solid #44474d;border-radius:10px;padding:14px 16px;box-shadow:0 12px 40px rgba(0,0,0,.6);color:#d9d3c4}
+.rp-top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.rp-brand{font:500 11px var(--mono);letter-spacing:.2em;color:#9aa0a6}
+.rp-s{font:500 11px var(--mono);color:#ffb35c;flex:1;text-align:right;white-space:nowrap;overflow:hidden}
+#rpClose{border-color:#44474d}
+.rp-disp{background:#120b04;border:1px solid #3a2a14;border-radius:6px;padding:10px 14px;display:flex;align-items:baseline;gap:12px;font-family:var(--mono);color:#ffb347;text-shadow:0 0 8px rgba(255,160,60,.55)}
+#rpBand{font-size:13px;opacity:.8;min-width:36px}
+#rpFreq{font-size:34px;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+#rpUnit{font-size:13px;opacity:.8}
+.rp-bands{display:flex;flex-wrap:wrap;gap:4px;margin:10px 0}
+.rp-bands button{font:500 11.5px var(--mono);border-color:#44474d;padding:6px 10px}
+.rp-bands button[aria-pressed="true"]{background:rgba(255,166,64,.18);border-color:#ffa640;color:#ffc27a}
+.rp-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rp-row>button{border-color:#44474d;font-family:var(--mono)}
+.knob{--r:0deg;width:58px;height:58px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#8a8d92,#3a3c40 70%);border:2px solid #55585e;position:relative;cursor:grab;touch-action:none;transform:rotate(var(--r))}
+.knob i{position:absolute;left:50%;top:5px;width:3px;height:14px;margin-left:-1.5px;background:#ffb347;border-radius:2px}
+.rp-hint{font:400 10.5px/1.4 var(--mono);color:#8a8f96;flex:1;min-width:160px}
+.rp-text{margin-top:10px;height:132px;overflow-y:auto;background:#0e1012;border:1px solid #2e3136;border-radius:6px;padding:8px 12px;font:400 13px/1.5 var(--ui)}
+.rp-text p{margin:0 0 6px}
+.rp-text p.hd{font:500 11px var(--mono);color:#ffb347;letter-spacing:.06em}
+.rp-text p.dim{color:#6f757c;font-family:var(--mono)}
+.rp-text .cur{color:#ffb347}
 </style>
 
 <canvas id="c"></canvas>
@@ -178,6 +202,15 @@ body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{di
   <div class="row"><button id="bBegin" class="btn-main">Begin the night</button><button id="bFree" class="btn-ghost">Free roam</button></div>
   <p class="fine">E or click to use things · L lantern · Shift sprint · Space jump · stay out of the Blackwood</p>
 </div></div>
+<div id="waterfx"></div>
+<div id="radio" hidden><div class="rp">
+  <div class="rp-top"><span class="rp-brand">RIDGEWAY HF-450</span><span class="rp-s" id="rpS"></span><button id="rpClose">Close</button></div>
+  <div class="rp-disp"><span id="rpBand">80m</span><span id="rpFreq">3.850</span><span id="rpUnit">MHz</span></div>
+  <div class="rp-bands" id="rpBands"></div>
+  <div class="rp-row"><button id="rpDown" aria-label="Tune down">&lt;</button><div class="knob" id="rpKnob" title="Drag or scroll to tune"><i></i></div><button id="rpUp" aria-label="Tune up">&gt;</button>
+    <div class="rp-hint">Drag or scroll the knob, or use the arrow keys. Up and down change band. Hold Shift for big steps. Esc closes.</div></div>
+  <div class="rp-text" id="rpText"></div>
+</div></div>
 <div id="endcard" hidden><div>
   <h2 id="endTitle"></h2><p id="endText"></p><ul id="endList"></ul>
   <button id="endBtn" class="btn-main"></button>
@@ -196,6 +229,7 @@ body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{di
       <dt>Shift</dt><dd>Move faster</dd>
       <dt>E or click</dt><dd>Use, pick up, light</dd>
       <dt>L</dt><dd>Lantern on or off</dd>
+      <dt>Scroll wheel</dt><dd>Zoom in and out (Z resets)</dd>
       <dt>Space</dt><dd>Jump (fly up in free roam)</dd>
       <dt>G</dt><dd>Walk or fly (free roam only)</dd>
       <dt>R</dt><dd>Jump to the campfire (free roam only)</dd>
@@ -432,7 +466,7 @@ function buildWater(){
       float fd=distance(vW.xz,uFire.xz);col+=vec3(1.,.5,.18)*uFire.w*.35*exp(-fd*fd/120.)*(.5+fr);
       float foam=(1.-smoothstep(0.,.07,dep))*(.55+.45*sin(uTime*1.7+p.x*.45+p.y*.3));
       col=mix(col,vec3(.92,.95,.95)*uLight,foam*.45);
-      float a=mix(.5,.94,smoothstep(0.,.35,dep));a=max(a,fr);
+      float a=mix(.25,.8,smoothstep(0.,.75,dep));a=max(a,fr*.85);
       col=mix(col,vec3(.66,.77,.88)*(uLight*.9+.1)+uSunCol*sp*.15,uFrz);a=mix(a,1.,uFrz);
       float ff=smoothstep(uFogNear,uFogFar,length(uCam-vW));col=mix(col,uFog,ff);
       gl_FragColor=vec4(col,mix(a,1.,ff));}`
@@ -718,11 +752,13 @@ function setMode(m){
 let stamina=100;
 function updateExplore(dt){
   if(Hunt.caught||SV.dead)return;
+  if(SV.seated())return;
   const inZone=zoneD(camera.position.x,camera.position.z)<ZONE.R*1.05;
   if(inZone&&!walk){walk=true;toast('Something pulls you down to the ground');}
   const shift=keys.ShiftLeft||keys.ShiftRight;let sp;
   if(inZone||SV.on){const sprint=shift&&stamina>1;sp=(sprint?8.2:4.6)*dt;if(sprint&&(keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight))stamina=Math.max(0,stamina-22*dt);else stamina=Math.min(100,stamina+11*dt);}
   else{sp=(shift?32:walk?6:13)*dt;stamina=Math.min(100,stamina+20*dt);}
+  if(SV.swim&&walk)sp*=.55;
   const fx=-Math.sin(yaw),fz=-Math.cos(yaw);let mx=0,mz=0,my=0;
   if(keys.KeyW||keys.ArrowUp){mx+=fx;mz+=fz;}if(keys.KeyS||keys.ArrowDown){mx-=fx;mz-=fz;}
   if(keys.KeyA||keys.ArrowLeft){mx+=fz;mz-=fx;}if(keys.KeyD||keys.ArrowRight){mx-=fz;mz+=fx;}
@@ -730,14 +766,14 @@ function updateExplore(dt){
   const l=Math.hypot(mx,mz)||1;const p=camera.position;p.x+=mx/l*sp;p.z+=mz/l*sp;SV.push(p,dt);Cabin.collide(p);
   const r=Math.hypot(p.x,p.z);if(r>340){p.x*=340/r;p.z*=340/r;}
   const g=Cabin.ground(p.x,p.z);
-  if(walk){if(SV.on)SV.vertical(p,g,dt,!!(mx||mz));else p.y+=(g+1.7+Math.sin(performance.now()*.012)*(l>1e-3&&(mx||mz)?.04:0)-p.y)*Math.min(1,dt*10);}
-  else{p.y+=my*sp;p.y=Math.max(p.y,g+2);p.y=Math.min(p.y,260);}
+  if(walk)SV.vertical(p,g,dt,!!(mx||mz));
+  else{p.y+=my*sp;p.y=Math.max(p.y,Math.max(g,.3)+2);p.y=Math.min(p.y,260);}
   const sk=SV.shake;camera.rotation.set(pitch+sk*(Math.random()-.5)*.018,yaw+sk*(Math.random()-.5)*.018,sk*Math.sin(elapsed*7)*.012,'YXZ');
 }
 let dragging=false,lx=0,ly=0;
 canvas.addEventListener('pointerdown',e=>{dragging=true;lx=e.clientX;ly=e.clientY;canvas.classList.add('dragging');canvas.setPointerCapture(e.pointerId);});
 canvas.addEventListener('pointermove',e=>{if(!dragging||Hunt.caught)return;const dx=e.clientX-lx,dy=e.clientY-ly;lx=e.clientX;ly=e.clientY;
-  if(Math.abs(dx)+Math.abs(dy)<1)return;if(mode==='tour')setMode('explore');yaw-=dx*.0042;pitch=clamp(pitch-dy*.0042,-1.45,1.45);});
+  if(Math.abs(dx)+Math.abs(dy)<1)return;if(mode==='tour')setMode('explore');{const ks=camera.fov/60;yaw-=dx*.0042*ks;pitch=clamp(pitch-dy*.0042*ks,-1.45,1.45);}});
 const endDrag=()=>{dragging=false;canvas.classList.remove('dragging');};
 canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);
 
@@ -883,8 +919,8 @@ const Animals={deer:[],rabbits:[],ducks:[],fish:[],rings:[],fishMesh:null,jumpT:
       const m=new THREE.Mesh(duck,lambertVC);scene.add(m);
       this.ducks.push({m,x:lx+Math.cos(a)*r,z:lz+Math.sin(a)*r,tx:lx,tz:lz,yaw:rnd()*6.28,ph:rnd()*6,t:0});}
     // ---- fish
-    const fishG=part([[new THREE.OctahedronGeometry(1,0).scale(.11,.15,.42),0x6b8a74,(x,y)=>y>0?.6:1.35],[new THREE.ConeGeometry(.14,.22,3).rotateX(-Math.PI/2).scale(.35,1,1).translate(0,0,-.52),0x55705f]]);
-    const N=qName==='low'?12:20;this.fishMesh=new THREE.InstancedMesh(fishG,lambertVC,N);this.fishMesh.frustumCulled=false;scene.add(this.fishMesh);
+    const fishG=part([[new THREE.OctahedronGeometry(1,0).scale(.11,.15,.42),0x7d9a6a,(x,y)=>y>0?.55:1.55],[new THREE.ConeGeometry(.14,.22,3).rotateX(-Math.PI/2).scale(.35,1,1).translate(0,0,-.52),0x55705f]]);
+    const N=qName==='low'?16:28;this.fishMesh=new THREE.InstancedMesh(fishG,new THREE.MeshLambertMaterial({vertexColors:true,transparent:true,opacity:.78,color:0xc4dce6}),N);this.fishMesh.frustumCulled=false;this.fishMesh.renderOrder=2;scene.add(this.fishMesh);
     for(let i=0;i<N;i++){let z=0;for(let t=0;t<80;t++){z=(rnd()*2-1)*220;if(heightAt(riverX(z),z)<-2)break;}
       this.fish.push({z,off:(rnd()-.5)*.6,dir:rnd()<.5?-1:1,spd:.8+rnd()*1.4,ph:rnd()*6,jump:-1,x:0,y:-.6,yaw:0,pitch:0});}
     const ringM=()=>new THREE.MeshBasicMaterial({color:0xe8f0f0,transparent:true,depthWrite:false,opacity:0});
@@ -928,14 +964,14 @@ const Animals={deer:[],rabbits:[],ducks:[],fish:[],rings:[],fishMesh:null,jumpT:
     this.jumpT-=dt;
     if(this.jumpT<=0){this.jumpT=2.5+rnd()*5;let best=null,bd=1e9;for(let i=0;i<5;i++){const f=this.fish[Math.floor(rnd()*this.fish.length)];if(f.jump>=0)continue;
         const d=Math.hypot(f.x-p.x,f.z-p.z);if(d<bd){bd=d;best=f;}}if(best){best.jump=0;this.splash(best.x,best.z);}}
-    const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),E=new THREE.Euler(0,0,0,'YXZ'),S=new THREE.Vector3(1,1,1);
+    const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),E=new THREE.Euler(0,0,0,'YXZ'),S=new THREE.Vector3(1.35,1.35,1.35);
     this.fish.forEach((f,i)=>{
       const rate=f.jump>=0?3.2:f.spd;f.z+=f.dir*rate*dt;
       const nx=riverX(f.z)+f.off*riverW(f.z)*.8;
       if(Math.abs(f.z)>225||(f.jump<0&&heightAt(nx,f.z)>-1.4)){f.dir*=-1;f.z+=f.dir*rate*dt*2;}
       f.x=riverX(f.z)+f.off*riverW(f.z)*.8;
       const dxdz=(riverX(f.z+1)-riverX(f.z-1))*.5;f.yaw=Math.atan2(dxdz*f.dir,f.dir);
-      let y=-.75+Math.sin(elapsed*.8+f.ph)*.15,pitch=0,wag=Math.sin(elapsed*(f.jump>=0?14:6)+f.ph)*.18;
+      let y=-.42+Math.sin(elapsed*.8+f.ph)*.08,pitch=0,wag=Math.sin(elapsed*(f.jump>=0?14:6)+f.ph)*.18;
       if(f.jump>=0){f.jump+=dt/1.1;const t=f.jump;y=-.5+5.2*t*(1-t);pitch=-(1-2*t)*1.1;if(t>=1){f.jump=-1;this.splash(f.x,f.z);}}
       E.set(pitch,f.yaw+wag,0);Q.setFromEuler(E);V1.set(f.x,y,f.z);M.compose(V1,Q,S);this.fishMesh.setMatrixAt(i,M);});
     this.fishMesh.instanceMatrix.needsUpdate=true;
@@ -1048,7 +1084,7 @@ function warmMat(opts){const m=new THREE.MeshLambertMaterial(opts);
     sh.fragmentShader=`uniform vec4 uStove,uCandle;uniform float uShade,uIce,uFront,uIceT;uniform mat4 uInv;varying vec3 vCW;varying vec3 vCN;
 vec3 wl(vec4 L,vec3 c,float wrap){vec3 d=L.xyz-vCW;float dd=dot(d,d);float nd=max(dot(normalize(vCN),normalize(d)),0.);return c*L.w*(nd*(1.-wrap)+wrap)/(1.+dd*.45);}
 `+sh.fragmentShader.replace('#include <envmap_fragment>',`
-  vec3 lpq=(uInv*vec4(vCW,1.)).xyz;float inner=step(abs(lpq.x),3.02)*step(abs(lpq.z),2.52)*step(lpq.y,2.95);
+  vec3 lpq=(uInv*vec4(vCW,1.)).xyz;float inner=step(abs(lpq.x),3.1)*step(abs(lpq.z),2.6)*step(lpq.y,2.95);
   outgoingLight*=mix(1.,uShade,inner);
   outgoingLight+=diffuseColor.rgb*(wl(uStove,vec3(1.,.52,.22),.3*inner)+wl(uCandle,vec3(1.,.74,.42),.3*inner));
   #include <envmap_fragment>`).replace('#include <fog_fragment>',`
@@ -1158,6 +1194,7 @@ const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[fa
     // chopping block and axe
     P(new THREE.CylinderGeometry(.32,.36,.5,9).translate(-4.8,.25,3.4),0x6b4a30);P(new THREE.CylinderGeometry(.31,.31,.02,9).translate(-4.8,.51,3.4),0xc9a878);
     P(new THREE.CylinderGeometry(.022,.026,.78,5).rotateZ(.55).translate(-4.62,.82,3.4),0x9a7a52);P(bx(-4.92,-4.74,.48,.6,3.37,3.43).rotateZ(.55),0x8a8d92);
+    this.build2(P,vr);
     const mesh=new THREE.Mesh(part(L),mat);G.add(mesh);
     G.updateMatrixWorld(true);CW.uInv.value.copy(G.matrixWorld).invert();
     const W=(x,y,z)=>G.localToWorld(new THREE.Vector3(x,y,z));this.W=W;
@@ -1165,7 +1202,7 @@ const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[fa
     this.glass=glassMat(false);
     for(const w of this.wins){const m=new THREE.Mesh(new THREE.PlaneGeometry(1.1,1.02).rotateY(w.r).translate(w.p[0],w.p[1],w.p[2]),this.glass);m.renderOrder=3;G.add(m);}
     const dg=new THREE.Group();dg.position.set(-.55,0,2.65);G.add(dg);this.doorG=dg;const D=[];
-    for(let i=0;i<5;i++)D.push([bx(i*.22+.003,i*.22+.217,.46,2.46,-.045,.045),0x5a3d26,vr(.25)]);
+    for(let i=0;i<5;i++)D.push([bx(i*.22,i*.22+.22,.46,2.46,-.045,.045),0x5a3d26,vr(.25)]);
     D.push([bx(.05,1.05,.75,.86,.045,.08),0x4a3322],[bx(.05,1.05,2.0,2.11,.045,.08),0x4a3322],[bx(.9,.96,1.35,1.5,.08,.13),0x8a8a8a],[bx(.9,.96,1.35,1.5,-.13,-.08),0x8a8a8a]);
     dg.add(new THREE.Mesh(part(D),mat));
     this.doorFrost=glassMat(true);const df=new THREE.Mesh(new THREE.PlaneGeometry(1.04,1.94).rotateY(Math.PI).translate(.55,1.46,-.05),this.doorFrost);df.renderOrder=3;dg.add(df);
@@ -1217,10 +1254,10 @@ const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[fa
     this.porchGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:gt,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));this.porchGlow.position.set(.88,2.05,3.1);this.porchGlow.scale.set(2.2,2.2,1);G.add(this.porchGlow);
     this.porchCore=new THREE.Sprite(new THREE.SpriteMaterial({map:ft,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));this.porchCore.position.set(.88,2.05,3.1);this.porchCore.scale.set(.14,.2,1);G.add(this.porchCore);
     // world positions
-    this.doorW=W(0,1.3,2.65);this.stoveW=W(SX,1.0,SZ+.45);this.smokeW=W(SX,5.25,SZ);this.bowlTopW=W(SX,1.4,SZ);
+    this.doorW=W(0,1.3,2.65);this.stoveW=W(SX,1.0,SZ+.45);this.smokeW=W(SX,5.25,SZ);this.bowlTopW=W(SX+.25,1.4,SZ+.18);
     this.boxes=[[-3.45,3.45,-2.85,-2.47],[-3.35,-2.97,-2.9,2.9],[2.97,3.35,-2.9,2.9],[-3.45,-.55,2.47,2.85],[.55,3.45,2.47,2.85],
       [SX-.45,SX+.45,SZ-.4,SZ+.4],[-1.64,-.96,-2.5,-1.96],[-.62,.92,-2.52,-1.96],[1.3,2.9,-2.5,-2.1],[.3,1.7,-.12,.72],[1.95,3.0,.6,2.45],[2.96,3.34,4.08,4.34],[-3.34,-2.96,4.08,4.34],[-5.15,-4.45,3.05,3.75]];
-    this.addInteractions();this.reset();
+    this.addInteractions();this.build3(W,G,mat);this.reset();
   },
   addInteractions(){const W=this.W,SX=this.SX,SZ=this.SZ,F=i=>FOODS[i][0];
     INT.push({p:W(0,1.35,2.65),r:.55,label:()=>this.door?'Close the door':'Open the door',act:()=>{this.door=!this.door;Sound.creak();}});
@@ -1231,7 +1268,7 @@ const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[fa
         return {hint:'The wood burner is full'};},
       act:()=>{if(!this.lit&&this.fuel>0&&SV.matches){this.lit=true;SV.everLit=true;Sound.strike();SV.say('The fire catches. Smoke rises from the chimney.',3000);}
         else if(SV.wood>0&&this.fuel<3.95){SV.wood--;this.fuel=Math.min(4,this.fuel+1);Sound.thunk();}}});
-    INT.push({p:W(SX,1.4,SZ),r:.24,inCab:1,label:()=>{const h=SV.held;
+    INT.push({p:W(SX+.25,1.4,SZ+.18),r:.2,inCab:1,label:()=>{const h=SV.held;
         if(h&&h.type==='bowl')return this.lit?'Set the bowl on the wood burner':{hint:'Light the wood burner first'};
         if(this.bowl==='stove'&&!SV.ate){if(this.heat<1)return {hint:'The '+F(this.bowlFood)+' is warming up ('+Math.round(this.heat*100)+'%)'};return 'Eat the '+F(this.bowlFood);}
         return null;},
@@ -1254,7 +1291,7 @@ const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[fa
   updateInside(p){const l=cabLocal(p.x,p.z);this.inside=Math.abs(l[0])<2.98&&l[1]>-2.48&&l[1]<2.48&&p.y<CAB.y+4;},
   ground(x,z){if(Math.abs(x-CAB.x)<9&&Math.abs(z-CAB.z)<9){const l=cabLocal(x,z);
       if(l[0]>-3.42&&l[0]<3.42&&l[1]>-2.92&&l[1]<4.37)return CAB.y+.45;if(Math.abs(l[0])<.72&&l[1]>=4.37&&l[1]<4.77)return CAB.y+.22;}
-    return Math.max(heightAt(x,z),.3);},
+    return heightAt(x,z);},
   collide(p){if(Math.abs(p.x-CAB.x)>9||Math.abs(p.z-CAB.z)>9)return;const l=cabLocal(p.x,p.z);let lx=l[0],lz=l[1];const r=.3;
     const bs=this.doorA>-.45?this.boxes.concat([[-.55,.55,2.47,2.85]]):this.boxes;
     for(const b of bs){const cx=clamp(lx,b[0],b[1]),cz=clamp(lz,b[2],b[3]);let dx=lx-cx,dz=lz-cz;const d2=dx*dx+dz*dz;if(d2>=r*r)continue;
@@ -1282,7 +1319,7 @@ const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[fa
     if(ch)this.canL.instanceMatrix.needsUpdate=this.canT.instanceMatrix.needsUpdate=true;
     // bowl
     this.bowlM.visible=this.bowl!=='held';
-    if(this.bowl==='counter')this.bowlM.position.set(.4,1.36,-2.2);else if(this.bowl==='stove')this.bowlM.position.set(this.SX,1.31,this.SZ);
+    if(this.bowl==='counter')this.bowlM.position.set(.4,1.36,-2.2);else if(this.bowl==='stove')this.bowlM.position.set(this.SX+.25,1.31,this.SZ+.18);
     const bf=this.bowlM.userData.food;bf.visible=this.bowlFood>=0&&!SV.ate;if(this.bowlFood>=0)bf.material.color.setHex(FOODS[this.bowlFood][2]);
     if(this.bowl==='stove'&&this.lit&&!SV.ate)this.heat=Math.min(1,this.heat+dt/30);
     this.emptyCanM.visible=this.emptyCan>=0;if(this.emptyCan>=0)this.emptyCanM.userData.l.material.color.setHex(FOODS[this.emptyCan][1]);
@@ -1402,6 +1439,7 @@ const SV={on:false,dead:false,won:false,gt:16,dgt:0,wood:0,woodTotal:0,matches:f
   say(m,ms){toast(m,ms||3200);},
   setLantern(v,quiet){this.lantern=v;if(!quiet)toast(v?'Lantern on':'Lantern off',1000);},
   reset(){Object.assign(this,{dead:false,won:false,gt:16,wood:0,woodTotal:0,matches:false,held:null,ate:false,found:false,everLit:false,eatenName:'',expo:0,cold:0,vy:0,said:{},warnedLow:false,lastHud:'',lastPrompt:''});
+    this.seat=null;Radio.close();Radio.power=false;Pump.fill=0;
     Cabin.reset();Wood.reset();Smoke.reset();this.setLantern(false,true);setFast(false);ICE.uIce.value=0;ICE.uFront.value=400;
     if(Hunt.state!=='dormant')Hunt.despawn();Hunt.static=0;Hunt.dread=0;stamina=100;$('frostfx').style.opacity=0;},
   start(){this.reset();$('intro').hidden=true;$('endcard').hidden=true;$('endcard').classList.remove('show');document.body.classList.add('survive');document.body.classList.remove('hidden-ui');this.on=true;
@@ -1416,11 +1454,17 @@ const SV={on:false,dead:false,won:false,gt:16,dgt:0,wood:0,woodTotal:0,matches:f
   keydown(e){
     if(!$('endcard').hidden){if(this.endReady&&this.endAct)this.endAct();e.preventDefault();return true;}
     if(!$('intro').hidden){if(e.code==='Enter'){this.start();return true;}return !(e.code==='KeyF'||e.code==='KeyH'||e.key==='?');}
+    if(Radio.open){if(!e.repeat||e.code.startsWith('Arrow'))Radio.key(e);e.preventDefault();return true;}
+    if(e.code==='KeyZ'){this.zoomT=60;return true;}
     if(e.code==='KeyE'){if(!e.repeat)Interact.use();return true;}
     if(e.code==='KeyL'){if(!e.repeat)this.setLantern(!this.lantern);return true;}
     if(this.on&&(e.code==='KeyG'||e.code==='KeyR'||e.code==='KeyC'))return true;
     return false;},
-  vertical(p,g,dt,moving){const eye=g+1.65;
+  vertical(p,g,dt,moving){const frz=water&&water.material.uniforms.uFrz.value>.5;let eye=g+1.65;this.swim=false;
+    if(g<0){if(frz)eye=1.65;else{eye=Math.max(g+1.65,.3);this.swim=g<-1.3;}}
+    if(this.swim){if(!this.wasSwim)toast('You are swimming',1400);this.wasSwim=true;this.vy=0;p.y+=(eye+Math.sin(elapsed*2.4)*.07-p.y)*Math.min(1,dt*4);
+      if(moving&&(this.splT-=dt)<0){this.splT=.55;Sound.noise(.25,900,.6,.12,'lowpass');}return;}
+    this.wasSwim=false;
     if(this.vy===0&&keys.Space&&p.y<=eye+.06&&this.jumpOk){this.vy=4.4;this.jumpOk=false;}if(!keys.Space)this.jumpOk=true;
     if(this.vy!==0||p.y>eye+.06){this.vy-=12*dt;p.y+=this.vy*dt;if(p.y<=eye){p.y=eye;this.vy=0;}}
     else p.y+=(eye+(moving?Math.sin(performance.now()*.011)*.035:0)-p.y)*Math.min(1,dt*12);},
@@ -1429,7 +1473,7 @@ const SV={on:false,dead:false,won:false,gt:16,dgt:0,wood:0,woodTotal:0,matches:f
     $('endList').innerHTML=items.map(([d,t])=>`<li class="${d?'done':''}">${t}</li>`).join('');$('endList').hidden=!items.length;$('endBtn').textContent=btn;
     this.endAct=fn;this.endReady=false;$('endcard').hidden=false;document.body.classList.add('hidden-ui');requestAnimationFrame(()=>$('endcard').classList.add('show'));setTimeout(()=>{this.endReady=true;},700);
     try{document.exitPointerLock&&document.exitPointerLock();}catch(e){}},
-  die(title){if(this.dead)return;this.dead=true;Sound.stinger();
+  die(title){if(this.dead)return;this.dead=true;Radio.close();this.seat=null;Sound.stinger();
     setTimeout(()=>this.showEnd(title,'It was '+fmtClock(this.gt)+'. Click or press any key to try the night again.',[],'Try the night again',()=>this.restart()),1300);},
   win(){this.won=true;this.on=false;const n=Cabin.candles.filter(Boolean).length;
     this.showEnd('You made it to dawn.','The gale is gone and the whole valley is frozen in glass.',[
@@ -1460,14 +1504,16 @@ const SV={on:false,dead:false,won:false,gt:16,dgt:0,wood:0,woodTotal:0,matches:f
       if(this.gale>.3&&!Cabin.inside&&(this.howl-=dt)<0){this.howl=1.5+Math.random()*2.5;if(Sound.on){const t=Sound.ctx.currentTime,f=420+Math.random()*380;Sound.tone(f,f*(.7+Math.random()*.5),t,2.2,.035*this.gale,'sine');}}
     }
     $('frostfx').style.opacity=Math.min(1,Math.max(this.expo,this.cold*.9,this.dead?1:0)).toFixed(3);
-    Cabin.update(dt);Smoke.update(dt);Storm.update();Wood.update();
+    Cabin.update(dt);Smoke.update(dt);Storm.update();Wood.update();Radio.update(dt);Pump.update(dt);
+    {const f=camera.fov+(this.zoomT-camera.fov)*Math.min(1,dt*10);if(Math.abs(f-camera.fov)>.01){camera.fov=f;camera.updateProjectionMatrix();}}
+    $('waterfx').style.opacity=this.swim?1:0;
     if(this.campOut>0){fire.light.intensity*=1-this.campOut;const v=this.campOut<.6;fire.flames.forEach(f=>f.visible=v);fire.glow.visible=v;fire.embers.visible=v;}
     else if(!fire.glow.visible){fire.flames.forEach(f=>f.visible=true);fire.glow.visible=true;fire.embers.visible=true;}
     // interaction prompt
     const can=(this.on&&!this.dead)||(!this.on&&mode==='explore'&&$('intro').hidden&&$('endcard').hidden);
     Interact.cur=can?Interact.find():null;const c=Interact.cur;
-    const ps=c?(typeof c.lb==='string'?'<kbd>E</kbd>'+c.lb:c.lb.hint):'';
-    if(ps!==this.lastPrompt){this.lastPrompt=ps;const el=$('prompt');el.hidden=!ps;el.innerHTML=ps;el.classList.toggle('hint',!!c&&typeof c.lb!=='string');}
+    const ps=c?(typeof c.lb==='string'?'<kbd>E</kbd>'+c.lb:c.lb.hint):(this.seat&&!Radio.open?'Press W, A, S or D to stand up':'');
+    if(ps!==this.lastPrompt){this.lastPrompt=ps;const el=$('prompt');el.hidden=!ps;el.innerHTML=ps;el.classList.toggle('hint',(!!c&&typeof c.lb!=='string')||(!c&&!!this.seat));}
     this.hudT-=dt;if(this.hudT<=0){this.hudT=.25;this.hud(sheltered);}
     this.compass();
   },
@@ -1505,9 +1551,189 @@ $('endcard').addEventListener('click',()=>{if(SV.endReady&&SV.endAct)SV.endAct()
 canvas.addEventListener('click',()=>{if(!SV.on||SV.dead)return;if(document.pointerLockElement===canvas){Interact.use();return;}
   if(Interact.cur&&typeof Interact.cur.lb==='string'){Interact.use();return;}
   try{const p=canvas.requestPointerLock&&canvas.requestPointerLock();p&&p.catch&&p.catch(()=>{});}catch(e){}});
-document.addEventListener('mousemove',e=>{if(document.pointerLockElement!==canvas||Hunt.caught||SV.dead)return;yaw-=e.movementX*.0024;pitch=clamp(pitch-e.movementY*.0024,-1.45,1.45);});
+document.addEventListener('mousemove',e=>{if(document.pointerLockElement!==canvas||Hunt.caught||SV.dead)return;{const ks=camera.fov/60;yaw-=e.movementX*.0024*ks;pitch=clamp(pitch-e.movementY*.0024*ks,-1.45,1.45);}});
 SV.compassInit();
 
+/* ================= FROSTFALL round 2: furniture, radio, pump, seats ================= */
+const SEATS={couch:{eye:[-2.5,1.48,0],dir:[1,0],stand:[-1.75,0],name:'the couch'},bed:{eye:[2.45,1.52,1.45],dir:[-1,0],stand:[1.55,1.65],name:'the bed'},
+  desk:{eye:[-1.75,1.62,1.55],dir:[0,1],stand:[-1.75,.85],name:'the desk'}};
+const RADIO_STATIONS=[
+  {b:0,f:3.873,name:'Ridgeline Emergency Net · net control KD9RTW',lines:[
+    'This is KD9RTW, net control for the Ridgeline Emergency Net. Any stations with emergency or priority traffic, call now.',
+    'W8OLM checking in from the lower valley. Temperature dropped eleven degrees in the last hour. Barometer is falling fast.',
+    'Roger W8OLM. All stations be advised: the cold front is ahead of schedule. Get your people indoors well before two.',
+    'KC1VJN here. North grid is down. Running on a car battery and a forty-watt panel. Plenty of firewood stacked.',
+    'Copy KC1VJN. Net control reminds everyone: keep stoves fed through the night and do not open doors once the wind arrives.'],
+   storm:['...net control... ice building on the antenna... if anyone copies, stay inside, stay by the fire...','W8OLM... still here... windows went white twenty minutes ago... fire is holding...','...KD9RTW... net will remain open until dawn... check in when you can...']},
+  {b:1,f:7.188,name:'Old Hollis · N0HLS',lines:[
+    'N0HLS on seven-one-eight-eight. Old Hollis here. Sixty-one years on the air and I have never seen the sky this color.',
+    'Got the shutters nailed down and a pot of beans going. Anybody out on the mountain roads tonight, turn back.',
+    'Somebody asked me about that dead patch of woods up the valley. I do not go there. Nobody who knows better goes there.',
+    'Tip for the young ones: crank the stove early, keep the door shut, and do not open it for anything you hear knocking after midnight.'],
+   storm:['N0HLS... still kicking. Glass on the inside of my windows now. Never seen that.','Keep feeding that fire, whoever is listening. Dawn comes. It always does.']},
+  {b:2,f:14.230,name:'VE7KQS · British Columbia',lines:[
+    'CQ CQ, this is VE7KQS in British Columbia. Anyone copy on twenty meters?',
+    'Same front came through here two nights ago. Trees went to glass in about forty minutes. Never heard a sound like it.',
+    'Lost two cattle that were left out. Everybody who stayed inside by a fire was fine. That is the whole lesson.',
+    'Propagation is wild tonight. Hearing stations from all over. Seventy-three and stay warm, VE7KQS clear.']},
+  {b:3,f:146.520,name:'Simplex · unknown station at the dam',lines:[
+    'Is anybody on this frequency? This is... I do not have a callsign. I found this radio in the dam office.',
+    'There are six of us in the control room. The generator has maybe two days of fuel.',
+    'If you can hear this and you are near the reservoir, the east road is still open. For now.',
+    '...hello? Please. If anyone is listening...']},
+  {b:4,f:870,name:'WFRN Newsradio 870',lines:[
+    'You are listening to WFRN Newsradio 870. Our top story: a severe arctic gale is expected to reach the valley shortly after two a.m.',
+    'The National Weather Service calls the event unsurvivable for anyone caught outdoors. Shelter in place with heat and water.',
+    'Officials say temperatures could fall more than sixty degrees in under an hour. Exposed water will freeze almost instantly.',
+    'Road closures are in effect on Route 9 and the Pass Road. Do not attempt to travel.',
+    'Utility crews have been pulled from the field. Expect outages through the weekend. Back after this.'],
+   storm:['WFRN is operating on emergency power. If you can hear this, you are inside. Stay there.','Keep your fire burning until sunrise. We will stay on the air as long as we can.']},
+  {b:4,f:1340,name:'The Midnight Lamp Hour · Brother Amos',lines:[
+    'Brothers and sisters, the cold is not a punishment. The cold is a question, and tonight every one of us has to answer it.',
+    'I have seen the glass forest in my dreams for seven years. I told you. I told all of you. Keep your lamps trimmed.',
+    'The ones who scoffed are out on the roads tonight. The ones who listened have wood stacked to the rafters.',
+    'Send what you can to the Midnight Lamp, P.O. Box... oh, never mind the mail. The mail is not coming. Pray instead.']},
+  {b:5,f:6.050,name:'Voice of the Last Light',lines:[
+    'This is the Voice of the Last Light, broadcasting from somewhere north of the line. Day four hundred and twelve.',
+    'To the families sheltering in the old mine: the eastern passes are open again. Travel only in daylight.',
+    'Reminder: boil all water. Burn only dry wood. Trust no one who comes at night asking to share your fire.',
+    '[a music box plays, slow and slightly out of tune]',
+    'Still here. Still broadcasting. The light stays on.']},
+  {b:5,f:9.395,name:'Unidentified numbers station',lines:[
+    'Seven... four... four... one... zero... zero... nine...','Ready... ready... eight... two... six... six... three...','[three tones]','Seven... four... four... one... zero... zero... nine...']},
+  {b:5,f:11.175,name:'Pentagon emergency advisory · HF rebroadcast',lines:[
+    'This is a recorded advisory from the Pentagon, rebroadcast on high frequency for remote areas.',
+    'Atmospheric monitoring stations report elevated radiation readings carried on the northern jet stream following last week’s incident.',
+    'Residents in affected regions should remain indoors, seal windows and doors, and avoid melting snow or rainwater for drinking. Well water is considered safe.',
+    'Potassium iodide distribution points will be announced when conditions permit. Do not travel to obtain supplies during the storm.',
+    'There is no immediate cause for panic. Repeat: there is no immediate cause for panic. This message will repeat.']}
+];
+const Radio={power:false,open:false,band:0,f:[3.850,7.150,14.200,146.400,1000,7.000],cur:null,lines:[],li:0,ci:0,pause:0,noiseT:0,sig:0,
+  BANDS:[['80m',3.5,4.0,.001,'MHz',3],['40m',7.0,7.3,.001,'MHz',3],['20m',14.0,14.35,.001,'MHz',3],['2m',144,148,.005,'MHz',3],['AM',530,1700,10,'kHz',0],['SW',5.9,15.8,.005,'MHz',3]],
+  init(){const bb=$('rpBands');this.BANDS.forEach((b,i)=>{const e=document.createElement('button');e.textContent=b[0];e.onclick=()=>this.setBand(i);bb.appendChild(e);});
+    $('rpClose').onclick=()=>this.close();$('rpDown').onclick=()=>this.tune(-1);$('rpUp').onclick=()=>this.tune(1);
+    const k=$('rpKnob');let drag=null;k.addEventListener('pointerdown',e=>{drag={y:e.clientY,x:e.clientX,acc:0};k.setPointerCapture(e.pointerId);});
+    k.addEventListener('pointermove',e=>{if(!drag)return;drag.acc+=(e.clientX-drag.x)-(e.clientY-drag.y);drag.x=e.clientX;drag.y=e.clientY;while(Math.abs(drag.acc)>6){const s=Math.sign(drag.acc);this.tune(s);drag.acc-=s*6;}});
+    k.addEventListener('pointerup',()=>{drag=null;});k.addEventListener('wheel',e=>{e.preventDefault();this.tune(e.deltaY<0?1:-1,e.shiftKey?10:1);},{passive:false});
+    this.render();},
+  openPanel(){if(!this.power)return;this.open=true;$('radio').hidden=false;try{document.exitPointerLock&&document.exitPointerLock();}catch(e){}this.render();},
+  close(){this.open=false;$('radio').hidden=true;},
+  setBand(i){this.band=(i+this.BANDS.length)%this.BANDS.length;this.render();},
+  tune(d,mult){const B=this.BANDS[this.band];let f=this.f[this.band]+d*B[3]*(mult||1);f=clamp(f,B[1],B[2]);this.f[this.band]=Math.round(f/B[3])*B[3];this.render();Sound.on&&Sound.noise(.03,2600,3,.05);},
+  station(){const B=this.BANDS[this.band],f=this.f[this.band];let best=null,bs=0;
+    for(const s of RADIO_STATIONS){if(s.b!==this.band)continue;const st=1-Math.abs(s.f-f)/(B[3]*3.01);if(st>bs){bs=st;best=s;}}return best?{s:best,st:bs}:null;},
+  render(){const B=this.BANDS[this.band],f=this.f[this.band];$('rpBand').textContent=B[0];$('rpFreq').textContent=f.toFixed(B[5]);$('rpUnit').textContent=B[4];
+    [...$('rpBands').children].forEach((e,i)=>e.setAttribute('aria-pressed',i===this.band));
+    $('rpKnob').style.setProperty('--r',((f-B[1])/B[3]*9)%360+'deg');
+    const m=this.station();const s=m?m.s:null;this.sig=m?m.st:0;
+    if(s!==this.cur){this.cur=s;this.lines=s?[]:[];this.li=0;this.ci=0;this.pause=.4;this.log=s?['— '+s.name+' —']:[];}
+    this.draw();},
+  pool(){const s=this.cur;if(!s)return[];return (SV.gt>=26&&s.storm)?s.storm:s.lines;},
+  garble(t){const k=1-this.sig;if(k<=.05)return t;let o='';for(const ch of t)o+=(ch!==' '&&Math.random()<k*.8)?'·':ch;return o;},
+  draw(){const el=$('rpText');const bars=Math.round(this.sig*9);$('rpS').textContent='S'+(this.cur?bars:0)+' '+'█'.repeat(this.cur?bars:0)+'░'.repeat(9-(this.cur?bars:0));
+    if(!this.cur){let n='';for(let i=0;i<46;i++)n+=Math.random()<.18?'~':Math.random()<.1?'·':' ';el.innerHTML='<p class="dim">Static.</p><p class="dim">'+n+'</p>';return;}
+    const done=this.log.slice(-4).map((t,i)=>`<p class="${i===0&&t.startsWith('—')?'hd':''}">${this.garble(t)}</p>`).join('');
+    const p=this.pool(),cur=p.length?p[this.li%p.length].slice(0,this.ci):'';el.innerHTML=done+(cur?`<p>${this.garble(cur)}<span class="cur">▌</span></p>`:'');el.scrollTop=el.scrollHeight;},
+  update(dt){
+    if(this.disp)this.disp.color.setHex(this.power?0xffa640:0x1a1206);
+    if(!this.open){if(this.hiss&&Sound.on)this.hiss.gain.setTargetAtTime(0,Sound.ctx.currentTime,.1);return;}
+    if(!this.power){this.close();return;}
+    if(Sound.on){if(!this.hiss){const c=Sound.ctx,s=c.createBufferSource(),bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=2200;bp.Q.value=.6;s.buffer=Sound.white;s.loop=true;this.hiss=c.createGain();this.hiss.gain.value=0;s.connect(bp).connect(this.hiss).connect(Sound.master);s.start();}
+      this.hiss.gain.setTargetAtTime(this.cur?.02+.05*(1-this.sig):.09,Sound.ctx.currentTime,.1);}
+    if(this.cur){const p=this.pool();if(!p.length)return;this.pause-=dt;if(this.pause>0){if((this.noiseT-=dt)<0){this.noiseT=.2;this.draw();}return;}
+      const line=p[this.li%p.length];this.ci+=dt*32;if(this.ci>=line.length){this.log.push(line);this.li++;this.ci=0;this.pause=2.6;
+        if(this.log.length>14)this.log=[this.log[0]].concat(this.log.slice(-10));}this.draw();}
+    else if((this.noiseT-=dt)<0){this.noiseT=.15;this.draw();}},
+  key(e){const B=this.BANDS[this.band];
+    if(e.code==='Escape'||e.code==='KeyE'){this.close();return;}
+    if(e.code==='ArrowLeft'||e.code==='KeyA')this.tune(-1,e.shiftKey?10:1);else if(e.code==='ArrowRight'||e.code==='KeyD')this.tune(1,e.shiftKey?10:1);
+    else if(e.code==='ArrowUp'||e.code==='KeyW')this.setBand(this.band+1);else if(e.code==='ArrowDown'||e.code==='KeyS')this.setBand(this.band-1);}
+};
+const Pump={fill:0,anim:0,handle:null,water:null,
+  update(dt){if(!this.handle)return;if(this.anim>0){this.anim-=dt;this.handle.rotation.z=Math.sin((1.2-this.anim)*Math.PI*2/0.6)*.45;}else this.handle.rotation.z*=.85;
+    this.water.visible=this.fill>.02;this.water.position.y=.03+this.fill*.26;
+    this.stream.visible=this.anim>.15;}
+};
+Object.assign(Cabin,{
+  build2(P,vr){
+    const CH=0xa8977a;
+    // solid chinked wall cores so no light leaks between round logs
+    const rects=(a0,a1,b0,b1,holes)=>{const xs=new Set([a0,a1]);holes.forEach(h=>{xs.add(h[0]);xs.add(h[1]);});const X=[...xs].filter(v=>v>=a0&&v<=a1).sort((p,q)=>p-q),out=[];
+      for(let i=0;i<X.length-1;i++){const x0=X[i],x1=X[i+1],xm=(x0+x1)/2;let ys=[[b0,b1]];for(const h of holes){if(xm<h[0]||xm>h[1])continue;const n=[];
+        for(const [p,q] of ys){if(h[3]<=p||h[2]>=q){n.push([p,q]);continue;}if(h[2]>p)n.push([p,h[2]]);if(h[3]<q)n.push([h[3],q]);}ys=n;}ys.forEach(([p,q])=>out.push([x0,x1,p,q]));}return out;};
+    rects(-3.32,3.32,.45,2.86,[[-.55,.55,.45,2.49],[1.2,2.3,1.13,2.15]]).forEach(r=>P(bx(r[0],r[1],r[2],r[3],2.57,2.73),CH));
+    P(bx(-3.32,3.32,.45,2.86,-2.73,-2.57),CH);
+    for(const s of [-1,1])rects(-2.82,2.82,.45,2.86,[[-.6,.6,1.13,2.15]]).forEach(r=>P(bx(s*3.15-.08,s*3.15+.08,r[2],r[3],r[0],r[1]),CH));
+    // couch under the left window
+    P(bx(-2.97,-2.2,.45,.82,-.97,.92),0x4a3322);P(bx(-2.85,-2.22,.82,.98,-.86,-.02),0x46606e);P(bx(-2.85,-2.22,.82,.98,.02,.82),0x46606e);
+    P(bx(-2.98,-2.76,.82,1.24,-.97,.92),0x3e5664);P(bx(-2.98,-2.2,.82,1.12,-.97,-.84),0x3e5664);P(bx(-2.98,-2.2,.82,1.12,.79,.92),0x3e5664);
+    P(bx(-2.74,-2.46,.98,1.16,.3,.62),0xc9a24a);
+    // desk, chair, battery
+    P(bx(-2.55,-.98,1.13,1.19,1.97,2.48),0x7a5634);P(bx(-1.42,-1.0,.72,1.13,1.99,2.46),0x6a4a2e);P(bx(-1.38,-1.04,.9,.94,1.985,1.99),0x9a9a9a);
+    for(const [x,z] of [[-2.52,2.0],[-2.52,2.42],[-1.06,2.0],[-1.06,2.42]])P(bx(x,x+.05,.45,1.13,z,z+.05),0x5e4128);
+    P(bx(-2.0,-1.5,.88,.93,1.3,1.8),0x6a4a2e);P(bx(-2.0,-1.5,.93,1.62,1.26,1.3),0x6a4a2e);P(bx(-1.98,-1.52,1.45,1.55,1.255,1.31),0x7a5634);
+    for(const [x,z] of [[-1.98,1.3],[-1.56,1.3],[-1.98,1.74],[-1.56,1.74]])P(bx(x,x+.04,.45,.88,z,z+.04),0x5e4128);
+    P(bx(-2.95,-2.62,.45,.68,2.02,2.36),0x1f2a22);P(bx(-2.95,-2.62,.68,.7,2.02,2.36),0x2e2e2e);
+    P(new THREE.CylinderGeometry(.018,.018,.04,6).translate(-2.88,.72,2.3),0xb8322a);P(new THREE.CylinderGeometry(.018,.018,.04,6).translate(-2.69,.72,2.3),0x1a1a1a);
+    // ham radio
+    P(bx(-2.05,-1.45,1.19,1.43,2.12,2.42),0x2a2b2e);P(bx(-2.06,-1.44,1.42,1.44,2.11,2.43),0x3a3b3e);
+    P(new THREE.CylinderGeometry(.045,.045,.03,12).rotateX(Math.PI/2).translate(-1.6,1.28,2.105),0x9a9a9e);
+    for(const x of [-1.98,-1.9,-1.82])P(new THREE.CylinderGeometry(.015,.015,.02,8).rotateX(Math.PI/2).translate(x,1.25,2.11),0x8a8a8e);
+    P(bx(-1.32,-1.22,1.19,1.27,2.0,2.08),0x1d1d1f);P(new THREE.CylinderGeometry(.012,.012,.12,5).translate(-1.27,1.33,2.04),0x1d1d1f);
+    // antenna lead up the wall
+    const tube=(pts,r,c)=>{const cp=new THREE.CurvePath();for(let i=0;i<pts.length-1;i++)cp.add(new THREE.LineCurve3(new THREE.Vector3(...pts[i]),new THREE.Vector3(...pts[i+1])));P(new THREE.TubeGeometry(cp,pts.length*6,r,4,false),c);};
+    tube([[-1.75,1.3,2.43],[-1.75,2.7,2.45],[-.9,2.75,2.45]],.008,0x2a2a2a);
+    // solar panel on the left roof slope, wire down to the battery
+    const ang=Math.atan2(1.8,3.75),d=new THREE.Vector3(Math.cos(ang),Math.sin(ang),0),n=new THREE.Vector3(-Math.sin(ang),Math.cos(ang),0);
+    const ry=x=>3.73+Math.tan(ang)*(x+1.875)+.08/Math.cos(ang);const P0=new THREE.Vector3(-1.9,ry(-1.9),1.35);
+    const frame=P0.clone().addScaledVector(n,.03);P(new THREE.BoxGeometry(1.6,.04,1.2).rotateZ(ang).translate(frame.x,frame.y,frame.z),0x9aa0a6);
+    for(let i=0;i<4;i++)for(let j=0;j<3;j++){const c=P0.clone().addScaledVector(d,(i-1.5)*.38).addScaledVector(n,.06);c.z+=(j-1)*.37;P(new THREE.BoxGeometry(.35,.02,.34).rotateZ(ang).translate(c.x,c.y,c.z),0x1b2a4a,()=>.9+.25*hash(i,j));}
+    const A=P0.clone().addScaledVector(d,-.82).addScaledVector(n,.04);A.z=1.9;
+    tube([[A.x,A.y,A.z],[-3.55,ry(-3.55)+.04,2.3],[-3.38,2.86,2.3],[-3.36,2.7,2.3],[-2.97,2.7,2.3],[-2.97,1.0,2.3],[-2.88,.74,2.3]],.014,0x141414);
+    // pump and bucket behind the cabin
+    P(new THREE.CylinderGeometry(.5,.55,.12,12).translate(1.4,.06,-4.4),0x8a8780);
+    P(new THREE.CylinderGeometry(.09,.11,1.0,10).translate(1.4,.62,-4.4),0x2a3a2e);P(new THREE.CylinderGeometry(.12,.12,.08,10).translate(1.4,1.14,-4.4),0x223026);
+    P(bx(1.45,1.74,.76,.84,-4.44,-4.36),0x2a3a2e);P(bx(1.7,1.74,.68,.84,-4.44,-4.36),0x2a3a2e);
+    P(bx(1.0,1.15,.12,.2,-4.95,-3.85),0x5e4129);
+  },
+  build3(W,G,mat){
+    this.boxes.push([-2.97,-2.15,-.97,.92],[-2.57,-.96,1.95,2.5],[-2.02,-1.48,1.24,1.82],[-2.97,-2.6,2.0,2.4],[1.22,1.58,-4.58,-4.22]);
+    // radio display + power cables
+    Radio.disp=new THREE.MeshBasicMaterial({color:0x1a1206});const dm=new THREE.Mesh(new THREE.PlaneGeometry(.3,.07).rotateY(Math.PI),Radio.disp);dm.position.set(-1.82,1.36,2.115);G.add(dm);
+    const tubeG=(pts,r)=>{const cp=new THREE.CurvePath();for(let i=0;i<pts.length-1;i++)cp.add(new THREE.LineCurve3(new THREE.Vector3(...pts[i]),new THREE.Vector3(...pts[i+1])));return part([[new THREE.TubeGeometry(cp,pts.length*6,r,4,false),0x111111]]);};
+    this.cableOn=new THREE.Mesh(tubeG([[-1.95,1.24,2.43],[-2.1,1.0,2.46],[-2.3,.48,2.44],[-2.62,.48,2.42],[-2.7,.6,2.32],[-2.69,.74,2.3]],.011),mat);G.add(this.cableOn);
+    this.cableOff=new THREE.Mesh(tubeG([[-1.95,1.24,2.43],[-2.0,.9,2.47],[-2.1,.47,2.4],[-2.35,.47,2.05],[-2.5,.47,1.95]],.011),mat);G.add(this.cableOff);
+    const clip=new THREE.Mesh(part([[bx(-2.56,-2.46,.45,.5,1.92,1.98),0xb8322a]]),mat);G.add(clip);this.clip=clip;
+    // pump handle, bucket, water
+    const hg=new THREE.Group();hg.position.set(1.4,1.16,-4.4);hg.add(new THREE.Mesh(part([[new THREE.CylinderGeometry(.018,.018,.7,6).rotateZ(Math.PI/2).translate(-.33,0,0),0x2a3a2e],[new THREE.CylinderGeometry(.03,.03,.14,6).rotateZ(Math.PI/2).translate(-.66,0,0),0x5e4129]]),lambertVC));G.add(hg);Pump.handle=hg;
+    const bm=addIce(new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));
+    const bucket=new THREE.Mesh(part([[new THREE.CylinderGeometry(.17,.14,.32,14,1,true).translate(0,.16,0),0x8a8f96],[new THREE.CircleGeometry(.14,14).rotateX(-Math.PI/2).translate(0,.01,0),0x6a6f76],[new THREE.TorusGeometry(.17,.008,4,14,Math.PI).translate(0,.32,0),0x5a5f66]]),bm);
+    bucket.position.set(1.72,.12,-4.4);G.add(bucket);
+    Pump.water=new THREE.Mesh(new THREE.CircleGeometry(.155,14).rotateX(-Math.PI/2),new THREE.MeshLambertMaterial({color:0x5c7f90}));Pump.water.position.set(1.72,.15,-4.4);G.add(Pump.water);
+    Pump.stream=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.5,5),new THREE.MeshLambertMaterial({color:0x8fb4c8,transparent:true,opacity:.7}));Pump.stream.position.set(1.72,.55,-4.4);G.add(Pump.stream);
+    // interactions
+    const seat=k=>INT.push({p:W(...SEATS[k].eye).setY(CAB.y+(k==='desk'?.92:.95)),r:k==='desk'?.3:.5,inCab:1,label:()=>SV.seat?null:'Sit on '+SEATS[k].name+(k==='desk'?'':''),act:()=>SV.sit(k)});
+    seat('couch');seat('bed');
+    INT.push({p:W(-1.75,.95,1.55),r:.3,inCab:1,label:()=>SV.seat?null:'Sit at the desk',act:()=>SV.sit('desk')});
+    INT.push({p:W(-1.75,1.31,2.27),r:.24,inCab:1,label:()=>Radio.power?'Use the ham radio':{hint:'The radio has no power. Connect it to the battery.'},act:()=>Radio.openPanel()});
+    INT.push({p:W(-2.78,.62,2.2),r:.2,inCab:1,label:()=>Radio.power?'Disconnect the radio from the battery':'Connect the radio cable to the battery',act:()=>{Radio.power=!Radio.power;Sound.clink();if(Radio.power)SV.say('The radio lights up. The solar panel keeps the battery charged.',3000);}});
+    INT.push({p:W(1.4,1.05,-4.4),r:.32,label:()=>ICE.uIce.value>.5?{hint:'The pump is frozen solid'}:Pump.fill>=1?{hint:'The bucket is full'}:'Pump water into the bucket',
+      act:()=>{Pump.anim=1.2;Pump.fill=Math.min(1,Pump.fill+.34);Sound.noise(.5,600,1,.18);setTimeout(()=>Sound.noise(.7,900,.5,.15,'lowpass'),300);}});
+    INT.push({p:W(1.72,.3,-4.4),r:.2,label:()=>Pump.fill>=1?'Drink from the bucket':Pump.fill>0?{hint:'The bucket is partly full'}:{hint:'An empty bucket. Use the hand pump.'},
+      act:()=>{Pump.fill=0;Sound.noise(.4,500,.6,.15,'lowpass');SV.say('Ice-cold well water. You feel more awake.',2600);stamina=100;}});
+  }
+});
+Object.assign(SV,{seat:null,swim:false,wasSwim:false,splT:0,zoomT:60,
+  sit(k){const s=SEATS[k];this.seat=k;this.held&&0;const d=Cabin.W(0,0,0),q=Cabin.W(s.dir[0],0,s.dir[1]);const dx=q.x-d.x,dz=q.z-d.z;yaw=Math.atan2(-dx,-dz);pitch=k==='desk'?-.15:-.05;
+    Sound.noise(.25,300,.8,.1);},
+  stand(){const s=SEATS[this.seat];this.seat=null;const w=Cabin.W(s.stand[0],0,s.stand[1]);camera.position.set(w.x,CAB.y+.45+1.65,w.z);this.vy=0;},
+  seated(){if(Radio.open){camera.rotation.set(pitch,yaw,0,'YXZ');return true;}if(!this.seat)return false;
+    if(keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight||keys.Space){this.stand();return true;}
+    const e=SEATS[this.seat].eye;camera.position.copy(Cabin.W(e[0],e[1],e[2]));camera.rotation.set(pitch,yaw,0,'YXZ');return true;}
+});
+
+Radio.init();
+canvas.addEventListener('wheel',e=>{e.preventDefault();SV.zoomT=clamp(SV.zoomT*(e.deltaY>0?1.12:1/1.12),15,75);},{passive:false});
 /* ---------------- Main loop ---------------- */
 const frustum=new THREE.Frustum(),PM=new THREE.Matrix4();
 let last=performance.now(),acc=0,frames=0,elapsed=0;

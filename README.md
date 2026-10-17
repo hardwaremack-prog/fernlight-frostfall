@@ -20,6 +20,24 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 | ![The cabin at dusk](screenshots/cabin-at-dusk.jpg) | ![Chimney smoke](screenshots/chimney-smoke.jpg) |
 | ![Inside the cabin](screenshots/cabin-interior.jpg) | ![Frost on the windows](screenshots/frosted-windows.jpg) |
 
+## The cabin
+
+- **Sit down** on the couch, on the edge of the bed, or in the wooden chair at the desk. Press W, A, S or D to stand up.
+- **Ham radio:** a solar panel on the roof charges a car battery on the floor beside the desk. Connect the radio's cable to the battery to power it on.
+  - Pick a band (80m, 40m, 20m, 2m, AM or shortwave) and turn the knob to tune.
+  - You can find emergency nets, an old-timer ham, a news station, a late-night preacher, a post-apocalyptic broadcaster, a numbers station, and a Pentagon advisory about fallout.
+  - Transmissions appear as text, and some change after 2:00 am.
+- **Water:** behind the cabin there's a hand pump and a bucket. Pump it full and drink.
+- **Swimming:** wade into the river and you'll swim once it gets deep. Fish are visible under the surface.
+- **Zoom:** use the scroll wheel to zoom in and out. Press Z to reset.
+
+| | |
+|---|---|
+| ![Couch, desk and radio](screenshots/cabin-couch-desk.jpg) | ![Tuning the ham radio](screenshots/ham-radio.jpg) |
+| ![Solar panel on the roof](screenshots/solar-panel.jpg) | ![Hand pump and bucket](screenshots/hand-pump.jpg) |
+
+![Swimming in the river](screenshots/swimming.jpg)
+
 ## The storm
 
 - **From 1:30 am** a blizzard tears off the mountaintops.
@@ -53,6 +71,8 @@ The Rootwalker still lives in the Blackwood, so keep away.
 | Space | Jump |
 | E or click | Use, pick up, light |
 | L | Lantern on / off |
+| Scroll wheel | Zoom in / out (Z resets) |
+| Radio | Drag or scroll the knob, arrow keys tune and change band, Shift for big steps, Esc closes |
 | T | Speed up time |
 | 1 2 3 4 | Low, medium, Pi OC, high detail |
 | H | Hide the overlay |
