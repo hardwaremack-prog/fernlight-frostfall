@@ -466,7 +466,7 @@ function buildWater(){
       float fd=distance(vW.xz,uFire.xz);col+=vec3(1.,.5,.18)*uFire.w*.35*exp(-fd*fd/120.)*(.5+fr);
       float foam=(1.-smoothstep(0.,.07,dep))*(.55+.45*sin(uTime*1.7+p.x*.45+p.y*.3));
       col=mix(col,vec3(.92,.95,.95)*uLight,foam*.45);
-      float a=mix(.25,.8,smoothstep(0.,.75,dep));a=max(a,fr*.85);
+      float a=mix(.2,.7,smoothstep(0.,.75,dep));a=max(a,fr*.8);
       col=mix(col,vec3(.66,.77,.88)*(uLight*.9+.1)+uSunCol*sp*.15,uFrz);a=mix(a,1.,uFrz);
       float ff=smoothstep(uFogNear,uFogFar,length(uCam-vW));col=mix(col,uFog,ff);
       gl_FragColor=vec4(col,mix(a,1.,ff));}`
@@ -920,7 +920,7 @@ const Animals={deer:[],rabbits:[],ducks:[],fish:[],rings:[],fishMesh:null,jumpT:
       this.ducks.push({m,x:lx+Math.cos(a)*r,z:lz+Math.sin(a)*r,tx:lx,tz:lz,yaw:rnd()*6.28,ph:rnd()*6,t:0});}
     // ---- fish
     const fishG=part([[new THREE.OctahedronGeometry(1,0).scale(.11,.15,.42),0x7d9a6a,(x,y)=>y>0?.55:1.55],[new THREE.ConeGeometry(.14,.22,3).rotateX(-Math.PI/2).scale(.35,1,1).translate(0,0,-.52),0x55705f]]);
-    const N=qName==='low'?16:28;this.fishMesh=new THREE.InstancedMesh(fishG,new THREE.MeshLambertMaterial({vertexColors:true,transparent:true,opacity:.78,color:0xc4dce6}),N);this.fishMesh.frustumCulled=false;this.fishMesh.renderOrder=2;scene.add(this.fishMesh);
+    const N=qName==='low'?16:28;this.fishMesh=new THREE.InstancedMesh(fishG,new THREE.MeshLambertMaterial({vertexColors:true,color:0xe6f2ea}),N);this.fishMesh.frustumCulled=false;scene.add(this.fishMesh);
     for(let i=0;i<N;i++){let z=0;for(let t=0;t<80;t++){z=(rnd()*2-1)*220;if(heightAt(riverX(z),z)<-2)break;}
       this.fish.push({z,off:(rnd()-.5)*.6,dir:rnd()<.5?-1:1,spd:.8+rnd()*1.4,ph:rnd()*6,jump:-1,x:0,y:-.6,yaw:0,pitch:0});}
     const ringM=()=>new THREE.MeshBasicMaterial({color:0xe8f0f0,transparent:true,depthWrite:false,opacity:0});
@@ -969,10 +969,10 @@ const Animals={deer:[],rabbits:[],ducks:[],fish:[],rings:[],fishMesh:null,jumpT:
       const rate=f.jump>=0?3.2:f.spd;f.z+=f.dir*rate*dt;
       const nx=riverX(f.z)+f.off*riverW(f.z)*.8;
       if(Math.abs(f.z)>225||(f.jump<0&&heightAt(nx,f.z)>-1.4)){f.dir*=-1;f.z+=f.dir*rate*dt*2;}
-      f.x=riverX(f.z)+f.off*riverW(f.z)*.8;
+      f.x=riverX(f.z)+(f.off+Math.sin(elapsed*.15+f.ph)*.12)*riverW(f.z)*.8;
       const dxdz=(riverX(f.z+1)-riverX(f.z-1))*.5;f.yaw=Math.atan2(dxdz*f.dir,f.dir);
-      let y=-.42+Math.sin(elapsed*.8+f.ph)*.08,pitch=0,wag=Math.sin(elapsed*(f.jump>=0?14:6)+f.ph)*.18;
-      if(f.jump>=0){f.jump+=dt/1.1;const t=f.jump;y=-.5+5.2*t*(1-t);pitch=-(1-2*t)*1.1;if(t>=1){f.jump=-1;this.splash(f.x,f.z);}}
+      const base=Math.max(-1.05-.55*((f.ph*7.3)%1)+Math.sin(elapsed*.5+f.ph)*.12,heightAt(f.x,f.z)+.35);let y=base,pitch=0,wag=Math.sin(elapsed*(f.jump>=0?14:6)+f.ph)*.18;
+      if(f.jump>=0){f.jump+=dt/1.1;const t=f.jump;y=base+(1.5-base)*4*t*(1-t);pitch=-(1-2*t)*1.1;if(t>=1){f.jump=-1;this.splash(f.x,f.z);}}
       E.set(pitch,f.yaw+wag,0);Q.setFromEuler(E);V1.set(f.x,y,f.z);M.compose(V1,Q,S);this.fishMesh.setMatrixAt(i,M);});
     this.fishMesh.instanceMatrix.needsUpdate=true;
     for(const r of this.rings){if(r.t>=1){r.m.visible=false;continue;}r.t+=dt/1.6;const s=1+r.t*5;r.m.scale.set(s,1,s);r.m.material.opacity=.75*(1-r.t);}
