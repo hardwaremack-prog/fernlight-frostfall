@@ -1280,7 +1280,7 @@ const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[fa
     this.doorW=W(0,1.3,2.65);this.stoveW=W(SX,1.0,SZ+.45);this.smokeW=W(SX,5.25,SZ);this.bowlTopW=W(SX+.25,1.4,SZ+.18);
     this.boxes=[[-3.45,3.45,-2.85,-2.47],[-3.35,-2.97,-2.9,2.9],[2.97,3.35,-2.9,2.9],[-3.45,-.55,2.47,2.85],[.55,3.45,2.47,2.85],
       [SX-.45,SX+.45,SZ-.4,SZ+.4],[-1.64,-.96,-2.5,-1.96],[-.62,.92,-2.52,-1.96],[1.3,2.9,-2.5,-2.1],[.3,1.7,-.12,.72],[1.95,3.0,.6,2.45],[2.96,3.34,4.08,4.34],[-3.34,-2.96,4.08,4.34],[-5.15,-4.45,3.05,3.75]];
-    this.addInteractions();this.build3(W,G,mat);this.build4();this.build5();this.build6();Nuke.build();this.reset();
+    this.addInteractions();this.build3(W,G,mat);this.build4();this.build5();this.build6();this.build7();Nuke.build();this.reset();
   },
   addInteractions(){const W=this.W,SX=this.SX,SZ=this.SZ,F=i=>FOODS[i][0];
     INT.push({p:W(0,1.35,2.65),r:.55,label:()=>this.door?'Close the door':'Open the door',act:()=>{this.door=!this.door;Sound.creak();}});
@@ -1974,7 +1974,7 @@ Object.assign(Cabin,{dirty:false,basin:0,trash:0,
       act:()=>{SV.axe=true;Shed.axe.visible=false;Sound.thunk();SV.say('An axe. Now you can hunt a deer or a duck for meat.',3200);}});
     // pump with a carryable bucket
     INT.push({p:W(1.4,1.05,-4.4),r:.32,label:()=>{const h=SV.held;if(h&&h.type==='bucket')return 'Set the bucket under the spout';
-        if(ICE.uIce.value>.5)return {hint:'The pump is frozen solid'};if(!Pump.at)return {hint:Cabin.shelfB?'The bucket is on the shelf above the wash basin.':'The bucket is missing. You left it somewhere.'};
+        if(ICE.uIce.value>.5)return {hint:'The pump is frozen solid'};if(!Pump.at)return {hint:Cabin.shelfB?'The bucket is on the shelf above the wash basin. Bring it here to fill it.':'The bucket is missing. You left it somewhere.'};
         if(Pump.fill>=1)return {hint:'The bucket is full. Pick it up and carry it inside.'};return 'Pump water into the bucket';},
       act:()=>{const h=SV.held;if(h&&h.type==='bucket'){Pump.at=true;Pump.fill=h.fill;SV.held=null;Sound.clink();return;}
         if(!Pump.at||ICE.uIce.value>.5||Pump.fill>=1)return;
@@ -1993,7 +1993,7 @@ Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,
   reset(){Object.assign(this,{dead:false,won:false,gt:16,wood:0,woodTotal:0,matches:false,held:null,ate:false,found:false,everLit:false,eatenName:'',expo:0,cold:0,vy:0,said:{},warnedLow:false,lastHud:'',lastPrompt:'',
       day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,campGone:false,nightDone:-1,paused:false,shedSeen:false,hungerWarned:0});
     this.seat=null;Radio.close();Radio.power=false;Radio.want=false;Radio.batt=8;Pump.fill=0;Pump.at=true;
-    Cabin.reset();Cabin.spare=true;Cabin.spareDirty=false;Cabin.shelfB=false;Reader.close();Cabin.dirty=false;Cabin.basin=0;Cabin.trash=0;Cabin.bowlFood=null;Wood.reset();Smoke.reset();Shed.reset();Hunting.reset();this.setLantern(false,true);setFast(false);ICE.uIce.value=0;ICE.uFront.value=400;
+    Cabin.reset();Cabin.spare=true;Cabin.spareDirty=false;Cabin.shelfB=false;Cabin.shelfFill=0;Cabin.setDown=null;Reader.close();Cabin.dirty=false;Cabin.basin=0;Cabin.trash=0;Cabin.bowlFood=null;Wood.reset();Smoke.reset();Shed.reset();Hunting.reset();this.setLantern(false,true);setFast(false);ICE.uIce.value=0;ICE.uFront.value=400;
     if(Hunt.state!=='dormant')Hunt.despawn();Hunt.static=0;Hunt.dread=0;stamina=100;$('frostfx').style.opacity=0;},
   tick(dt){const g=this.g2(),storm=g>=26&&g<30;const rate=(storm?1/67.5:1/135)*(fast?8:1);this.dgt=0;
     if(this.on&&!this.dead&&!this.paused){this.dgt=dt*rate;this.gt+=this.dgt;}tod=(this.gt%24)/24;},
@@ -2041,7 +2041,7 @@ Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,
       if(this.gale>.3&&!Cabin.inside&&(this.howl-=dt)<0){this.howl=1.5+Math.random()*2.5;if(Sound.on){const t=Sound.ctx.currentTime,f=420+Math.random()*380;Sound.tone(f,f*(.7+Math.random()*.5),t,2.2,.035*this.gale,'sine');}}
     }
     $('frostfx').style.opacity=Math.min(1,Math.max(this.expo,this.cold*.9,this.dead?1:0)).toFixed(3);
-    Cabin.update(dt);Cabin.update4(dt);Cabin.update5();Cabin.update6();Nuke.update(dt);Smoke.update(dt);Storm.update();Wood.update();Radio.update(dt);Pump.update(dt);Music.update();
+    Cabin.update(dt);Cabin.update4(dt);Cabin.update5();Cabin.update6();Cabin.update7();Nuke.update(dt);Smoke.update(dt);Storm.update();Wood.update();Radio.update(dt);Pump.update(dt);Music.update();
     {const f=camera.fov+(this.zoomT-camera.fov)*Math.min(1,dt*10);if(Math.abs(f-camera.fov)>.01){camera.fov=f;camera.updateProjectionMatrix();}}
     $('waterfx').style.opacity=this.swim?1:0;$('seen').hidden=!(Hunt.state==='hunt'&&!Hunt.caught);
     if(this.campOut>0){fire.light.intensity*=1-this.campOut;const v=this.campOut<.6;fire.flames.forEach(f=>f.visible=v);fire.glow.visible=v;fire.embers.visible=v;}
@@ -2219,14 +2219,40 @@ Object.assign(Cabin,{shelfB:false,
     b.add(new THREE.Mesh(part([[new THREE.CircleGeometry(.162,16).rotateX(-Math.PI/2).translate(0,.28,0),0x5c7f90]]),this.mat));
     b.position.set(.67,1.88,-2.27);b.visible=false;G.add(b);this.shelfBM=b;
     INT.push({p:W(.67,2.05,-2.27),r:.24,inCab:1,label:()=>{const h=SV.held;
-        if(this.shelfB)return h?{hint:'A full bucket of water, saved for the frozen morning'}:'Take the bucket of water down';
-        if(h&&h.type==='bucket')return h.fill>=.99?'Store the full bucket on the shelf for the morning':{hint:'Fill the bucket at the pump before storing it'};
+        if(this.shelfB)return h?{hint:this.shelfFill>.3?'A full bucket of water, saved for the frozen morning':'The empty bucket'}:(this.shelfFill>.3?'Take the bucket of water down':'Take the empty bucket down');
+        if(h&&h.type==='bucket')return h.fill>.3?'Store the full bucket on the shelf for the morning':'Put the empty bucket up on the shelf';
         return {hint:'A shelf for a full bucket of water. The pump freezes overnight.'};},
       act:()=>{const h=SV.held;
-        if(this.shelfB&&!h){this.shelfB=false;SV.held={type:'bucket',fill:1};Sound.clink();return;}
-        if(!this.shelfB&&h&&h.type==='bucket'&&h.fill>=.99){this.shelfB=true;SV.held=null;Sound.clink();SV.say('The bucket is safe on the shelf. You will have water even when the pump freezes.',3200);}}});
+        if(this.shelfB&&!h){this.shelfB=false;SV.held={type:'bucket',fill:this.shelfFill};Sound.clink();return;}
+        if(!this.shelfB&&h&&h.type==='bucket'){this.shelfB=true;this.shelfFill=h.fill;SV.held=null;Sound.clink();if(h.fill>.3)SV.say('The bucket is safe on the shelf. You will have water even when the pump freezes.',3200);}}});
   },
-  update6(){if(this.shelfBM)this.shelfBM.visible=this.shelfB;}
+  update6(){if(this.shelfBM){this.shelfBM.visible=this.shelfB;this.shelfBM.children[1].visible=this.shelfFill>.3;}}
+});
+
+/* ---------- a free spot on the counter to set things down, and washing up with one hand full ---------- */
+const HELD_NAME=h=>h.type==='meat'?(h.kind==='duck'?'raw duck':'raw venison'):h.type==='can'?'can of '+FOODS[h.i][0]+(h.opened?' (open)':''):h.type==='empty'?'empty can':h.type==='book'?'"'+BOOKS[h.i].t+'"':'';
+Object.assign(Cabin,{setDown:null,
+  build7(){const G=this.G,W=this.W;const g=new THREE.Group();g.position.set(-.47,1.36,-2.16);G.add(g);this.sdG=g;
+    g.add(new THREE.Mesh(bx(-.12,.12,0,.015,-.1,.1),new THREE.MeshLambertMaterial({color:0x9a7a52})));
+    this.sdMeat=new THREE.Mesh(new THREE.IcosahedronGeometry(.06,0).scale(1.4,.7,1).translate(0,.05,0),new THREE.MeshLambertMaterial({color:0x9a2a2a}));
+    this.sdCan=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.11,12).translate(0,.07,0),new THREE.MeshLambertMaterial({color:0xb0b4b8}));
+    this.sdBook=new THREE.Mesh(new THREE.BoxGeometry(.15,.035,.2).translate(0,.033,0),new THREE.MeshLambertMaterial({color:0x7a2a24}));
+    g.add(this.sdMeat,this.sdCan,this.sdBook);
+    const OK=['meat','can','empty','book'];
+    INT.push({p:W(-.47,1.42,-2.16),r:.15,inCab:1,label:()=>{const h=SV.held,s=this.setDown;
+        if(s)return h?{hint:'The '+HELD_NAME(s)+' is set down here'}:'Pick up the '+HELD_NAME(s);
+        if(h&&OK.includes(h.type))return 'Set the '+HELD_NAME(h)+' down on the counter';return null;},
+      act:()=>{const h=SV.held;if(this.setDown&&!h){SV.held=this.setDown;this.setDown=null;Sound.clink();return;}
+        if(!this.setDown&&h&&OK.includes(h.type)){this.setDown=h;SV.held=null;Sound.clink();}}});
+    const basin=INT.find(it=>it.p.distanceTo(W(.66,1.45,-2.22))<.02);
+    if(basin){const L0=basin.label,A0=basin.act;const one=()=>{const h=SV.held;return h&&OK.includes(h.type)&&this.dirty&&this.bowl==='counter'&&this.basin>0;};
+      basin.label=()=>one()?'Wash the dirty bowl in the basin':L0();
+      basin.act=()=>{if(one()){this.basin--;this.dirty=false;Sound.pour();SV.say('The bowl is clean.',2000);return;}A0();};}
+    const stove=INT.find(it=>{try{const h0=SV.held,b0=this.bowl,d0=this.dirty;SV.held=null;this.bowl='stove';this.dirty=true;const l=it.label();SV.held=h0;this.bowl=b0;this.dirty=d0;return l==='Pick up the dirty bowl';}catch(e){return false;}});
+    if(stove){const L1=stove.label;stove.label=()=>{const h=SV.held;if(this.bowl==='stove'&&this.dirty&&h&&OK.includes(h.type))return {hint:'Your hands are full. Set the '+HELD_NAME(h)+' down on the counter first.'};return L1();};}
+  },
+  update7(){if(!this.sdG)return;const s=this.setDown;this.sdMeat.visible=!!s&&s.type==='meat';this.sdCan.visible=!!s&&(s.type==='can'||s.type==='empty');this.sdBook.visible=!!s&&s.type==='book';
+    if(s&&s.type==='meat')this.sdMeat.material.color.setHex(s.kind==='duck'?0xc0675a:0x9a2a2a);if(s&&s.type==='can')this.sdCan.material.color.setHex(FOODS[s.i][2]);if(s&&s.type==='empty')this.sdCan.material.color.setHex(0xb0b4b8);if(s&&s.type==='book')this.sdBook.material.color.setHex(BOOKS[s.i].c);}
 });
 
 /* ================= FROSTFALL round 6: stove mute, day 3 air raid, bunker, ground zero ================= */
