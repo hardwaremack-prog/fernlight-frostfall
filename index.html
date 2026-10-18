@@ -180,7 +180,7 @@ body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{di
   </div>
   <div class="sep"></div>
   <div class="grp" id="qgrp">
-    <button data-q="low">Low</button><button data-q="medium">Med</button><button data-q="oc">Pi OC</button><button data-q="high">High</button>
+    <button data-q="low">Low</button><button data-q="medium">Med</button><button data-q="oc">Pi5 OC</button><button data-q="high">High</button>
   </div>
   <div class="sep"></div>
   <div class="grp">
@@ -241,7 +241,7 @@ body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{di
       <dt>G</dt><dd>Walk or fly (free roam only)</dd>
       <dt>R</dt><dd>Jump to the campfire (free roam only)</dd>
       <dt>T</dt><dd>Speed up time</dd>
-      <dt>1 2 3 4</dt><dd>Low, medium, Pi OC, high detail (restarts)</dd>
+      <dt>1 2 3 4</dt><dd>Low, medium, Pi5 OC, high detail (restarts)</dd>
       <dt>H</dt><dd>Hide or show the overlay</dd>
       <dt>P</dt><dd>Save a screenshot</dd>
       <dt>F</dt><dd>Fullscreen</dd>
@@ -860,7 +860,7 @@ function saveShot(){
   canvas.toBlob(b=>{if(!b)return;const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='fernlight-hollow-'+Date.now()+'.png';
     document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('Screenshot saved');},'image/png');
 }
-$('gpu').textContent=(GPU||'Unknown GPU').replace(/ANGLE \(|\)$/g,'')+' · '+({low:'Low',medium:'Medium',oc:'Pi OC',high:'High'})[qName];
+$('gpu').textContent=(GPU||'Unknown GPU').replace(/ANGLE \(|\)$/g,'')+' · '+({low:'Low',medium:'Medium',oc:'Pi5 OC',high:'High'})[qName];
 $('gpu').title=GPU;
 
 /* ---------------- Shared helpers for creatures ---------------- */

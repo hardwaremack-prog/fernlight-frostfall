@@ -112,7 +112,7 @@ The Rootwalker still lives in the Blackwood, so keep away.
 | Scroll wheel | Zoom in / out (Z resets) |
 | Radio | Drag or scroll the knob, arrow keys tune and change band, Shift for big steps, Esc closes |
 | T | Speed up time |
-| 1 2 3 4 | Low, medium, Pi OC, high detail |
+| 1 2 3 4 | Low, medium, Pi5 OC, high detail |
 | H | Hide the overlay |
 | F | Fullscreen |
 
@@ -120,7 +120,7 @@ The Rootwalker still lives in the Blackwood, so keep away.
 
 ## Tuned for an overclocked Pi 5 / 500
 
-- When it detects the Pi's VideoCore GPU, it picks the **Pi OC** preset. That means more trees, grass, flowers and snow than Medium.
+- When it detects the Pi's VideoCore GPU, it picks the **Pi5 OC** preset. That means more trees, grass, flowers and snow than Medium.
 - Render resolution still adapts on its own to hold a smooth frame rate.
 - Ice, frost, snow and smoke are done in lightweight shaders and particles, and the cabin's candle and stove light is calculated only on the cabin itself.
 
