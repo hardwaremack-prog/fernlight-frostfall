@@ -12,7 +12,7 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 2. **Gather 8 firewood.** Bundles are scattered around the cabin and glint faintly at night.
 3. **Light the wood burner.** The matches are on the table. Smoke rises from the chimney once it's going.
 4. **Light the 4 candles.**
-5. **Eat a hot meal.** Pick one of 15 cans from the pantry shelf, open it with the can opener, pour it into the metal bowl, and heat it on the wood burner.
+5. **Eat a hot meal.** Pick one of 18 cans from the pantry shelf (including Spam, Kidney Beans and Mixed Vegetables), open it with the can opener, pour it into the metal bowl, and heat it on the wood burner.
 6. **Be inside with the door shut by 2:00 am**, then keep the fire fed until dawn at 6:00 am.
 
 | | |
@@ -63,7 +63,7 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 ## The radio shack
 
 - **Antenna:** a lattice antenna tower with a beam antenna stands beside the cabin, with coax running into the radio.
-- **Battery:** a meter on the wall shows the radio battery. A full charge gives about **3.5 hours** of radio time, and the roof panel recharges it in daylight.
+- **Battery:** a meter on the wall shows the radio battery as a bar and a percentage. A full charge gives about **3.5 hours** of radio time, and the roof panel recharges it in daylight.
 - **Special stations:**
   - **15.000 MHz:** sounds like the WWV time station, with second ticks, minute tones, alternating 500/600 Hz tones and a voice announcing UTC.
   - **7.030 MHz:** Morse code you can hear, decoded on screen as it's sent.
