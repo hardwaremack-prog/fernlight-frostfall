@@ -1280,7 +1280,7 @@ const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[fa
     this.doorW=W(0,1.3,2.65);this.stoveW=W(SX,1.0,SZ+.45);this.smokeW=W(SX,5.25,SZ);this.bowlTopW=W(SX+.25,1.4,SZ+.18);
     this.boxes=[[-3.45,3.45,-2.85,-2.47],[-3.35,-2.97,-2.9,2.9],[2.97,3.35,-2.9,2.9],[-3.45,-.55,2.47,2.85],[.55,3.45,2.47,2.85],
       [SX-.45,SX+.45,SZ-.4,SZ+.4],[-1.64,-.96,-2.5,-1.96],[-.62,.92,-2.52,-1.96],[1.3,2.9,-2.5,-2.1],[.3,1.7,-.12,.72],[1.95,3.0,.6,2.45],[2.96,3.34,4.08,4.34],[-3.34,-2.96,4.08,4.34],[-5.15,-4.45,3.05,3.75]];
-    this.addInteractions();this.build3(W,G,mat);this.build4();this.build5();this.build6();this.build7();Nuke.build();this.reset();
+    this.addInteractions();this.build3(W,G,mat);this.build4();this.build5();this.build6();this.build7();CanArt.build();Nuke.build();this.reset();
   },
   addInteractions(){const W=this.W,SX=this.SX,SZ=this.SZ,F=i=>FOODS[i][0];
     INT.push({p:W(0,1.35,2.65),r:.55,label:()=>this.door?'Close the door':'Open the door',act:()=>{this.door=!this.door;Sound.creak();}});
@@ -2041,7 +2041,7 @@ Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,
       if(this.gale>.3&&!Cabin.inside&&(this.howl-=dt)<0){this.howl=1.5+Math.random()*2.5;if(Sound.on){const t=Sound.ctx.currentTime,f=420+Math.random()*380;Sound.tone(f,f*(.7+Math.random()*.5),t,2.2,.035*this.gale,'sine');}}
     }
     $('frostfx').style.opacity=Math.min(1,Math.max(this.expo,this.cold*.9,this.dead?1:0)).toFixed(3);
-    Cabin.update(dt);Cabin.update4(dt);Cabin.update5();Cabin.update6();Cabin.update7();Nuke.update(dt);Smoke.update(dt);Storm.update();Wood.update();Radio.update(dt);Pump.update(dt);Music.update();
+    Cabin.update(dt);Cabin.update4(dt);Cabin.update5();Cabin.update6();Cabin.update7();CanArt.update();Nuke.update(dt);Smoke.update(dt);Storm.update();Wood.update();Radio.update(dt);Pump.update(dt);Music.update();
     {const f=camera.fov+(this.zoomT-camera.fov)*Math.min(1,dt*10);if(Math.abs(f-camera.fov)>.01){camera.fov=f;camera.updateProjectionMatrix();}}
     $('waterfx').style.opacity=this.swim?1:0;$('seen').hidden=!(Hunt.state==='hunt'&&!Hunt.caught);
     if(this.campOut>0){fire.light.intensity*=1-this.campOut;const v=this.campOut<.6;fire.flames.forEach(f=>f.visible=v);fire.glow.visible=v;fire.embers.visible=v;}
@@ -2254,6 +2254,113 @@ Object.assign(Cabin,{setDown:null,
   update7(){if(!this.sdG)return;const s=this.setDown;this.sdMeat.visible=!!s&&s.type==='meat';this.sdCan.visible=!!s&&(s.type==='can'||s.type==='empty');this.sdBook.visible=!!s&&s.type==='book';
     if(s&&s.type==='meat')this.sdMeat.material.color.setHex(s.kind==='duck'?0xc0675a:0x9a2a2a);if(s&&s.type==='can')this.sdCan.material.color.setHex(FOODS[s.i][2]);if(s&&s.type==='empty')this.sdCan.material.color.setHex(0xb0b4b8);if(s&&s.type==='book')this.sdBook.material.color.setHex(BOOKS[s.i].c);}
 });
+
+/* ================= FROSTFALL round 8: food you can see in the bowl, illustrated can labels ================= */
+/* ---------- can labels ---------- */
+const CanArt={tex:[],
+  icon(x,cx,cy,name){const P=(c)=>{x.fillStyle=c;};const E=(ex,ey,rx,ry,c,r)=>{P(c);x.beginPath();x.ellipse(ex,ey,rx,ry,r||0,0,6.283);x.fill();};
+    const bowl=(fill,bits)=>{E(cx,cy+6,30,20,'#f4efe4');E(cx,cy+2,28,11,fill);bits&&bits();P('rgba(255,255,255,.55)');for(let i=0;i<3;i++){x.fillRect(cx-10+i*10,cy-26,2,10+i%2*4);}};
+    const bean=(bx,by,c)=>{E(bx,by,6,3.6,c,.4);E(bx-1.5,by-1,2,1,'rgba(255,255,255,.35)',.4);};
+    const cube=(bx,by,s,c)=>{P(c);x.fillRect(bx-s/2,by-s/2,s,s);};
+    let s=0;const r=()=>{s=(s*9301+49297)%233280;return s/233280;};s=name.length*77;
+    switch(name){
+      case 'Spam':P('#f2f2f2');x.fillRect(cx-36,cy+10,72,8);P('#e8a0a0');x.fillRect(cx-28,cy-18,56,30);P('#c87878');x.fillRect(cx-28,cy+4,56,8);
+        P('#f4c0c0');x.fillRect(cx-24,cy-15,48,4);for(let i=0;i<3;i++){P('#b06060');x.fillRect(cx-20+i*16,cy-18,2,30);}break;
+      case 'Ravioli':for(let j=0;j<2;j++)for(let i=0;i<3;i++){const px=cx-26+i*26,py=cy-12+j*24;P('#a8402a');x.fillRect(px-11,py-11,22,22);P('#f0d49a');x.fillRect(px-9,py-9,18,18);P('#d8b878');x.fillRect(px-5,py-5,10,10);
+          P('#c8a060');for(let k=-9;k<9;k+=3){x.fillRect(px+k,py-10,1.5,2);x.fillRect(px+k,py+8,1.5,2);}}break;
+      case 'Beef Stew':bowl('#6b3a22',()=>{for(let i=0;i<9;i++)cube(cx-20+r()*40,cy-4+r()*10,6,['#4a2214','#d8752a','#d8c48a'][i%3]);});break;
+      case 'Chili con Carne':P('#c4281a');x.beginPath();x.moveTo(cx-30,cy-6);x.quadraticCurveTo(cx,cy-24,cx+28,cy+14);x.quadraticCurveTo(cx-2,cy+4,cx-30,cy+4);x.fill();P('#3a7a2a');x.fillRect(cx-36,cy-6,8,6);break;
+      case 'Baked Beans':case 'Pork and Beans':case 'Kidney Beans':case 'Black Bean Soup':{const c={'Baked Beans':'#b8602e','Pork and Beans':'#a8582a','Kidney Beans':'#8a2030','Black Bean Soup':'#2a2422'}[name];
+        for(let i=0;i<14;i++)bean(cx-26+r()*52,cy-14+r()*28,c);if(name==='Pork and Beans'){cube(cx+12,cy-4,10,'#f0d0b8');}break;}
+      case 'Tomato Soup':E(cx,cy+2,24,22,'#d8321f');E(cx-8,cy-6,6,4,'rgba(255,255,255,.4)');P('#3a8a2a');x.fillRect(cx-4,cy-24,8,6);x.fillRect(cx-12,cy-22,24,3);break;
+      case 'Chicken Noodle Soup':bowl('#e2c060',()=>{x.strokeStyle='#fff3c0';x.lineWidth=2;for(let i=0;i<6;i++){x.beginPath();x.moveTo(cx-22+r()*20,cy-2+r()*6);x.quadraticCurveTo(cx,cy+r()*8-4,cx+r()*22,cy-2+r()*6);x.stroke();}cube(cx-6,cy,6,'#f0e0c0');cube(cx+10,cy+2,5,'#e07a2a');});break;
+      case 'Creamed Corn':P('#3a7a2a');x.beginPath();x.ellipse(cx,cy,14,30,.6,0,6.283);x.fill();P('#f0d040');x.beginPath();x.ellipse(cx+3,cy-2,10,26,.6,0,6.283);x.fill();
+        P('#c8a020');for(let i=0;i<14;i++){x.fillRect(cx-12+((i*7)%22),cy-20+i*3,3,2);}break;
+      case 'Peaches':E(cx-12,cy,18,17,'#f4a050');E(cx+14,cy+4,16,15,'#f08840');E(cx-12,cy,7,6,'#c8602a');E(cx+14,cy+4,6,5,'#c8602a');E(cx-18,cy-6,4,3,'rgba(255,255,255,.4)');break;
+      case 'Clam Chowder':P('#e8dcc0');x.beginPath();x.moveTo(cx-28,cy+12);x.lineTo(cx+28,cy+12);x.quadraticCurveTo(cx+30,cy-24,cx,cy-26);x.quadraticCurveTo(cx-30,cy-24,cx-28,cy+12);x.fill();
+        x.strokeStyle='#a89878';x.lineWidth=2;for(let i=-3;i<=3;i++){x.beginPath();x.moveTo(cx,cy+12);x.lineTo(cx+i*9,cy-22+Math.abs(i)*3);x.stroke();}P('#c8b898');x.fillRect(cx-8,cy+10,16,6);break;
+      case 'Split Pea Soup':bowl('#7a9a3a',()=>{for(let i=0;i<10;i++)E(cx-20+r()*40,cy-2+r()*8,3,3,'#5a7a2a');cube(cx+8,cy,6,'#d88a7a');});break;
+      case 'Corned Beef Hash':E(cx,cy+4,32,14,'#2a2a2a');P('#3a3a3a');x.fillRect(cx+30,cy+2,18,5);for(let i=0;i<14;i++)cube(cx-22+r()*44,cy-2+r()*10,5,i%2?'#9a4a3a':'#d8b080');break;
+      case 'Minestrone':case 'Vegetable Soup':bowl(name==='Minestrone'?'#b04a2a':'#b0622a',()=>{for(let i=0;i<10;i++){const k=i%4;if(k===0)cube(cx-20+r()*40,cy-2+r()*8,5,'#e07a2a');else if(k===1)E(cx-20+r()*40,cy-1+r()*8,3,3,'#5a9a2a');else if(k===2)cube(cx-20+r()*40,cy-2+r()*8,5,'#e0d090');else bean(cx-20+r()*40,cy+r()*6,'#8a2030');}});break;
+      case 'Mixed Vegetables':for(let i=0;i<18;i++){const k=i%3,px=cx-28+r()*56,py=cy-16+r()*32;if(k===0)cube(px,py,7,'#e07a2a');else if(k===1)E(px,py,4,4,'#5aa03a');else cube(px,py,5,'#f0d040');}break;
+      default:bowl('#a06030');}
+  },
+  make(i){const f=FOODS[i],c=document.createElement('canvas');c.width=512;c.height=160;const x=c.getContext('2d');
+    const col='#'+f[1].toString(16).padStart(6,'0');x.fillStyle=col;x.fillRect(0,0,512,160);
+    const g=x.createLinearGradient(0,0,0,160);g.addColorStop(0,'rgba(255,255,255,.12)');g.addColorStop(.5,'rgba(255,255,255,0)');g.addColorStop(1,'rgba(0,0,0,.25)');x.fillStyle=g;x.fillRect(0,0,512,160);
+    x.fillStyle='#e8d8a8';x.fillRect(0,8,512,6);x.fillRect(0,146,512,6);
+    for(const ox of [0,256]){x.fillStyle='rgba(255,250,235,.92)';x.beginPath();x.ellipse(ox+128,62,52,40,0,0,6.283);x.fill();
+      x.strokeStyle='#e8d8a8';x.lineWidth=3;x.stroke();this.icon(x,ox+128,62,f[0]);
+      x.fillStyle='#fff';x.textAlign='center';x.textBaseline='middle';let fs=26;x.font=`700 ${fs}px Georgia,serif`;while(x.measureText(f[0]).width>230&&fs>12){fs--;x.font=`700 ${fs}px Georgia,serif`;}
+      x.lineWidth=4;x.strokeStyle='rgba(0,0,0,.45)';x.strokeText(f[0],ox+128,124);x.fillText(f[0],ox+128,124);}
+    const t=new THREE.CanvasTexture(c);t.anisotropy=2;return t;},
+  build(){FOODS.forEach((f,i)=>this.tex.push(this.make(i)));
+    const G=Cabin.G,geo=new THREE.CylinderGeometry(.045,.045,.09,18,1,true);this.labels=FOODS.map((f,i)=>{const m=new THREE.Mesh(geo,warmMat({map:this.tex[i],side:THREE.DoubleSide}));m.matrixAutoUpdate=false;G.add(m);return m;});
+    Cabin.canL.visible=false;
+    const hl=Cabin.heldCan.userData.l.material;hl.map=this.tex[0];hl.needsUpdate=true;Cabin.openLabel.map=this.tex[0];Cabin.openLabel.needsUpdate=true;
+    if(Cabin.sdCan){Cabin.sdCan.material.map=this.tex[0];Cabin.sdCan.material.needsUpdate=true;}},
+  update(){if(!this.labels)return;const M=new THREE.Matrix4(),S=new THREE.Vector3();
+    this.labels.forEach((m,i)=>{Cabin.canL.getMatrixAt(i,M);S.setFromMatrixScale(M);m.visible=S.x>.01;m.matrix.copy(M);m.matrixWorldNeedsUpdate=true;});
+    const h=SV.held;if(h&&(h.type==='can'||h.type==='empty')){const l=Cabin.heldCan.userData.l.material;l.map=this.tex[h.i];l.color.setHex(0xffffff);}
+    if(Cabin.opening){Cabin.openLabel.map=this.tex[Cabin.opening.i];Cabin.openLabel.color.setHex(0xffffff);}
+    const s=Cabin.setDown;if(Cabin.sdCan&&s&&(s.type==='can'||s.type==='empty')){Cabin.sdCan.material.map=this.tex[s.i];Cabin.sdCan.material.color.setHex(0xffffff);}}
+};
+/* ---------- what is in the bowl ---------- */
+const BowlViz={cache:{},
+  R:{ 'Beef Stew':[['cube',0x5a2a18,10,.022],['cube',0xd8752a,8,.015],['cube',0xd8c48a,8,.019],['pea',0x5a8a2a,6,.007]],
+      'Chili con Carne':[['bean',0x7a2a28,14,.008],['cube',0x4a2214,10,.008],['pea',0xe8e0c0,4,.004]],
+      'Baked Beans':[['bean',0xb06030,26,.008]],
+      'Tomato Soup':[['pea',0x9a1a10,8,.003],['cube',0xe8c890,3,.014]],
+      'Chicken Noodle Soup':[['noodle',0xf2e2a2,16,.012],['cube',0xeedcb8,6,.011],['cube',0xe07a2a,5,.008]],
+      'Creamed Corn':[['pea',0xf0d050,28,.006]],
+      'Peaches':[['slice',0xf2a45a,6,.032]],
+      'Ravioli':[['pillow',0xecc890,7,.016],['pea',0x3a7a2a,4,.003]],
+      'Clam Chowder':[['cube',0xf4ecd4,11,.02],['clam',0x9a8c70,9,.017],['pea',0x4a7a2a,10,.0035],['cube',0xb86050,4,.009]],
+      'Split Pea Soup':[['cube',0xc87a6a,5,.011],['pea',0x5a7a2a,8,.005]],
+      'Corned Beef Hash':[['cube',0x9a4a3a,14,.012],['cube',0xd8b080,10,.012]],
+      'Black Bean Soup':[['bean',0x1e1a18,16,.008],['pea',0xe8e0c0,3,.004]],
+      'Minestrone':[['noodle',0xe8d090,8,.008],['bean',0x7a2028,6,.008],['cube',0xd8752a,5,.01],['pea',0x5a9a2a,6,.006]],
+      'Pork and Beans':[['bean',0xb06030,22,.008],['cube',0xecccb4,3,.014]],
+      'Vegetable Soup':[['cube',0xd8752a,6,.011],['cube',0xe0d090,6,.013],['pea',0x5a9a2a,6,.006],['gbean',0x4a8a2a,5,.012]],
+      'Kidney Beans':[['bean',0x7a2028,22,.009]],
+      'Mixed Vegetables':[['cube',0xe07a2a,8,.011],['pea',0x6aa03a,10,.007],['pea',0xf0d050,8,.006],['gbean',0x4a8a2a,5,.012]]},
+  shape(t,s){switch(t){case 'cube':return new THREE.BoxGeometry(s,s*.8,s);case 'bean':return new THREE.SphereGeometry(s,6,4).scale(1.5,.75,1);
+      case 'pea':return new THREE.SphereGeometry(s,5,4);case 'noodle':return new THREE.CylinderGeometry(.0035,.0035,s*4,4).rotateZ(Math.PI/2);
+      case 'gbean':return new THREE.CylinderGeometry(.004,.004,s*2.4,5).rotateZ(Math.PI/2);case 'pillow':return new THREE.BoxGeometry(s*2,s*.55,s*2);
+      case 'slice':return new THREE.SphereGeometry(s,10,4,0,Math.PI).scale(1,.35,.55);case 'clam':return new THREE.SphereGeometry(s,7,4,0,6.283,0,Math.PI/2).scale(1,.45,.85);}},
+  chunks(name){const rec=this.R[name];if(!rec)return null;let n=0;const L=[];
+    for(const [t,c,cnt,s] of rec)for(let k=0;k<cnt;k++){n++;const a=hash(n,name.length)*6.283,rr=Math.sqrt(hash(n,31+name.length))*.078,g=this.shape(t,s*(.8+hash(n,7)*.4));
+      g.rotateY(hash(n,9)*6.283);if(t==='cube'||t==='pillow')g.rotateX((hash(n,11)-.5)*.6);g.translate(Math.cos(a)*rr,.046+s*.25+hash(n,13)*.004,Math.sin(a)*rr);L.push([g,c]);}
+    return part(L);},
+  meat(kind){const g=new THREE.Group();let body,extras=[];
+    if(kind==='duck'){body=new THREE.Mesh(new THREE.SphereGeometry(.05,14,8).scale(1.25,.42,.85).translate(-.012,.052,0));
+      const sc=[];for(let i=-2;i<=2;i++)sc.push([new THREE.BoxGeometry(.004,.003,.06).rotateY(.7).translate(-.012+i*.016,.073,0),0x5a2a1a]);
+      extras.push(new THREE.Mesh(part(sc)));
+      const leg=new THREE.Group();leg.add(new THREE.Mesh(new THREE.SphereGeometry(.022,10,6).scale(1.5,.8,1)));leg.position.set(.035,.056,.03);leg.rotation.y=-.9;
+      const bone=new THREE.Mesh(new THREE.CylinderGeometry(.005,.006,.026,6).rotateZ(Math.PI/2).translate(.04,0,0));bone.userData.fixed=0xeee0c8;leg.add(bone);
+      g.add(leg);g.userData.leg=leg.children[0];}
+    else{body=new THREE.Mesh(new THREE.CylinderGeometry(.05,.047,.026,16).scale(1.2,1,.72).translate(0,.06,0));
+      const sp=[];for(let i=0;i<12;i++)sp.push([new THREE.SphereGeometry(.0025,4,3).translate((hash(i,3)-.5)*.09,.0745,(hash(i,4)-.5)*.05),0x1a1410]);extras.push(new THREE.Mesh(part(sp)));
+      const gm=[];for(let i=-1;i<=1;i++)gm.push([new THREE.BoxGeometry(.11,.002,.006).rotateY(.5).translate(i*.022,.0745,0),0x2a1408]);const grill=new THREE.Mesh(part(gm));grill.userData.grill=true;extras.push(grill);}
+    g.add(body);extras.forEach(e=>g.add(e));g.userData.body=body;return g;},
+  spam(){const g=new THREE.Group();const body=new THREE.Group();for(let i=0;i<3;i++){const m=new THREE.Mesh(new THREE.BoxGeometry(.075,.014,.04));m.position.set(-.03+i*.026,.05+i*.006,(i-1)*.01);m.rotation.set(0,.35,.14);body.add(m);}
+    g.add(body);g.userData.slabs=body.children;return g;},
+  make(key,depth){const mm=o=>new THREE.MeshLambertMaterial(Object.assign({depthTest:depth,depthWrite:depth},o));let g;
+    if(key==='duck'||key==='venison'){g=this.meat(key);g.traverse(o=>{if(o.isMesh)o.material=o.geometry.attributes.color?mm({vertexColors:true}):mm({color:o.userData.fixed||0xffffff});});}
+    else if(key==='Spam'){g=this.spam();g.userData.slabs.forEach(m=>m.material=mm({color:0xd98a8a}));}
+    else{const geo=this.chunks(key);if(!geo)return null;g=new THREE.Group();g.add(new THREE.Mesh(geo,mm({vertexColors:true})));}
+    if(!depth)g.traverse(o=>{o.renderOrder=31;});g.userData.key=key;return g;},
+  apply(food){const bowl=food.parent;if(!bowl)return;const f=Cabin.bowlFood,depth=food.material.depthTest;
+    const key=Cabin.dirty||!f?null:(f.meat?f.name:f.name);let v=bowl.userData.viz;
+    if(!v||v.userData.key!==key){if(v){bowl.remove(v);}v=null;if(key){v=this.make(key,depth);if(v)bowl.add(v);}bowl.userData.viz=v;}
+    if(!v)return;const h=Cabin.heat;
+    if(key==='duck'||key==='venison'){const raw=key==='duck'?0xd79a86:0x8e2222,ck=key==='duck'?0x8a4a1e:0x5a3020;
+      MC1.setHex(raw).lerp(MC2.setHex(ck),smooth(0,1,h));v.userData.body.material.color.copy(MC1);if(v.userData.leg)v.userData.leg.material.color.copy(MC1);
+      v.children.forEach(c=>{if(c.userData.grill)c.visible=h>.45;});food.scale.setScalar(.85);MC1.setHex(key==='duck'?0xc88a70:0x4a1010).lerp(MC2.setHex(key==='duck'?0x6a3a14:0x3a2014),smooth(0,1,h));food.material.color.copy(MC1);}
+    else if(key==='Spam'){MC1.setHex(0xe09a94).lerp(MC2.setHex(0xa85a40),smooth(.2,1,h)*.8);v.userData.slabs.forEach(m=>m.material.color.copy(MC1));food.scale.setScalar(.7);food.material.color.setHex(0x8a5a40);}
+    else food.scale.setScalar(1);}
+};
+{const _bv=Meal.bowlVisual.bind(Meal);Meal.bowlVisual=function(mesh){_bv(mesh);BowlViz.apply(mesh);};}
 
 /* ================= FROSTFALL round 6: stove mute, day 3 air raid, bunker, ground zero ================= */
 /* ---------- wood burner sound toggle ---------- */

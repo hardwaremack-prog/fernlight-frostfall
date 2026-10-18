@@ -51,6 +51,16 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 - **Hands full?** There's a cutting board on the left end of the counter. Set down raw meat, a can or a book there while you deal with the dirty bowl. You can also wash a bowl at the basin with one hand full.
 - **Water for the morning:** the pump freezes solid overnight. Before the storm, pump the bucket full and store it on the **shelf above the wash basin**. In the frozen morning, take it down and pour it into the basin to wash up. The empty bucket can go back up on the shelf too, so your hands are free to cook.
 
+**What's cooking:** every can has an illustrated label showing what's inside, like the Spam block, ravioli pillows, beans, corn or a clam shell. In the bowl, the food looks like itself:
+- stew and chowder come out chunky
+- Spam is three sliced slabs that brown as they heat
+- duck is a scored breast with a drumstick that turns golden
+- venison is a steak that goes from red to seared, with grill marks
+
+![Food in the bowl, raw and cooked](screenshots/bowl-food.jpg)
+
+![Can labels](screenshots/can-labels.jpg)
+
 ## Days and levels
 
 - Survive the night to reach the next day and level.
