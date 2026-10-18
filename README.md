@@ -38,6 +38,41 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 
 ![Swimming in the river](screenshots/swimming.jpg)
 
+## Hunger and chores
+
+- **Hunger:** the food meter empties over 3 hours. Eat before it runs out, or you start starving.
+- **Cooking from a can:** take a can from the shelf and open it with the can opener. Pour it into the metal bowl, then **throw the empty can in the trash**. Heat the bowl on the wood burner and eat.
+- **Washing up:** after eating, the bowl is dirty. Carry the bucket from the pump inside and pour it into the **wash basin** on the counter (enough for 3 washes). Wash the bowl and it goes back on the counter, ready to reuse. Take the empty bucket back to the pump.
+
+## Days and levels
+
+- Survive the night to reach the next day and level.
+- **Day 2:** the frost has burst the lock on the shed out back. Inside is an **axe**.
+- **Hunting:** with the axe you can hunt a deer or a duck. Sneak up slowly, because deer bolt if you run at them. In the morning the ducks are frozen into the lake ice.
+- **Cooking meat:** put the meat in the bowl and cook it on the wood burner before eating. It takes longer than canned food.
+- The ice thaws by midday, and the gale returns every night at 2:00 am.
+
+## Danger
+
+- Bundles of firewood are scattered through **the Blackwood** to tempt you in.
+- When the Rootwalker spots you, you get a warning: **"It has seen you · run"**. Hold Shift to run.
+
+## The radio shack
+
+- **Antenna:** a lattice antenna tower with a beam antenna stands beside the cabin, with coax running into the radio.
+- **Battery:** a meter on the wall shows the radio battery. A full charge gives about **2.5 hours** of radio time, and the roof panel recharges it in daylight.
+- **Special stations:**
+  - **15.000 MHz:** sounds like the WWV time station, with second ticks, minute tones, alternating 500/600 Hz tones and a voice announcing UTC.
+  - **7.030 MHz:** Morse code you can hear, decoded on screen as it's sent.
+  - **9.395 MHz:** a numbers station read out loud in an eerie voice where the system has one, or with tones where it doesn't.
+- **Once the world is fully frozen:** tuning gets much tighter, and a creepy organ rendition of Bach's *Toccata and Fugue in D minor* plays.
+
+| | |
+|---|---|
+| ![Wash basin and bowl](screenshots/wash-basin.jpg) | ![WWV on 15 MHz](screenshots/wwv-time-station.jpg) |
+| ![The shed on day 2](screenshots/shed-day2.jpg) | ![Cooking venison](screenshots/cooking-venison.jpg) |
+| ![Antenna tower](screenshots/antenna-tower.jpg) | ![It has seen you](screenshots/it-has-seen-you.jpg) |
+
 ## The storm
 
 - **From 1:30 am** a blizzard tears off the mountaintops.

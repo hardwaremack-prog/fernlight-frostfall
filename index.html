@@ -139,6 +139,11 @@ body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{di
 .rp-text p.hd{font:500 11px var(--mono);color:#ffb347;letter-spacing:.06em}
 .rp-text p.dim{color:#6f757c;font-family:var(--mono)}
 .rp-text .cur{color:#ffb347}
+#seen{position:fixed;left:50%;transform:translateX(-50%);top:calc(60px + env(safe-area-inset-top,0px));z-index:3;pointer-events:none;font:600 13px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:#ff6a5a;background:rgba(30,4,4,.72);border:1px solid rgba(255,90,80,.5);border-radius:6px;padding:7px 14px;animation:seenpulse .8s ease-in-out infinite}
+@keyframes seenpulse{50%{opacity:.45}}
+.mbar{display:inline-block;width:90px;height:6px;border-radius:3px;background:rgba(239,232,214,.15);vertical-align:middle;overflow:hidden;margin:0 4px}
+.mbar i{display:block;height:100%}
+@media (prefers-reduced-motion:reduce){#seen{animation:none}}
 </style>
 
 <canvas id="c"></canvas>
@@ -198,11 +203,13 @@ body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{di
     <li>Find the matches and light the candles</li>
     <li>Pick a can from the pantry, heat it on the wood burner and eat</li>
     <li>Be inside with the door shut by 2:00 am, and keep the fire going until dawn</li>
+    <li>Eat every 3 hours. Wash your bowl, bin your cans, and survive more nights to level up</li>
   </ul>
   <div class="row"><button id="bBegin" class="btn-main">Begin the night</button><button id="bFree" class="btn-ghost">Free roam</button></div>
   <p class="fine">E or click to use things · L lantern · Shift sprint · Space jump · stay out of the Blackwood</p>
 </div></div>
 <div id="waterfx"></div>
+<div id="seen" hidden>It has seen you · run</div>
 <div id="radio" hidden><div class="rp">
   <div class="rp-top"><span class="rp-brand">RIDGEWAY HF-450</span><span class="rp-s" id="rpS"></span><button id="rpClose">Close</button></div>
   <div class="rp-disp"><span id="rpBand">80m</span><span id="rpFreq">3.850</span><span id="rpUnit">MHz</span></div>
@@ -226,7 +233,7 @@ body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{di
     <dl>
       <dt>Drag mouse</dt><dd>Look around</dd>
       <dt>W A S D</dt><dd>Move (switches to Explore)</dd>
-      <dt>Shift</dt><dd>Move faster</dd>
+      <dt>Shift</dt><dd>Run (uses stamina)</dd>
       <dt>E or click</dt><dd>Use, pick up, light</dd>
       <dt>L</dt><dd>Lantern on or off</dd>
       <dt>Scroll wheel</dt><dd>Zoom in and out (Z resets)</dd>
@@ -756,7 +763,7 @@ function updateExplore(dt){
   const inZone=zoneD(camera.position.x,camera.position.z)<ZONE.R*1.05;
   if(inZone&&!walk){walk=true;toast('Something pulls you down to the ground');}
   const shift=keys.ShiftLeft||keys.ShiftRight;let sp;
-  if(inZone||SV.on){const sprint=shift&&stamina>1;sp=(sprint?8.2:4.6)*dt;if(sprint&&(keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight))stamina=Math.max(0,stamina-22*dt);else stamina=Math.min(100,stamina+11*dt);}
+  if(inZone||SV.on){const sprint=shift&&stamina>1;sp=(sprint?8.8:4.6)*dt;SV.running=sprint&&!!(keys.KeyW||keys.ArrowUp||keys.KeyA||keys.KeyD||keys.KeyS);if(sprint&&(keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight))stamina=Math.max(0,stamina-14*dt);else stamina=Math.min(100,stamina+12*dt);}
   else{sp=(shift?32:walk?6:13)*dt;stamina=Math.min(100,stamina+20*dt);}
   if(SV.swim&&walk)sp*=.55;
   const fx=-Math.sin(yaw),fz=-Math.cos(yaw);let mx=0,mz=0,my=0;
@@ -933,19 +940,19 @@ const Animals={deer:[],rabbits:[],ducks:[],fish:[],rings:[],fishMesh:null,jumpT:
     if(this.hid){this.hid=false;this.fishMesh.visible=true;}
     const p=camera.position,pg=p.y-Math.max(heightAt(p.x,p.z),0),grounded=pg<14;
     // deer
-    for(const d of this.deer){const dist=Math.hypot(d.x-p.x,d.z-p.z);d.g.visible=dist<170;if(!d.g.visible&&d.state!=='flee')continue;
-      if(dist<24&&grounded&&mode==='explore'){if(d.state!=='flee')d.t=3+rnd()*2;d.state='flee';d.dir=Math.atan2(d.x-p.x,d.z-p.z)+Math.sin(elapsed+d.ph)*.4;}
+    for(const d of this.deer){if(d.dead){d.g.visible=false;continue;}const dist=Math.hypot(d.x-p.x,d.z-p.z);d.g.visible=dist<170;if(!d.g.visible&&d.state!=='flee')continue;
+      if(dist<(SV.running?22:4.5)&&grounded&&mode==='explore'){if(d.state!=='flee')d.t=3+rnd()*2;d.state='flee';d.dir=Math.atan2(d.x-p.x,d.z-p.z)+Math.sin(elapsed+d.ph)*.4;}
       d.t-=dt;
       if(d.t<=0){if(d.state==='graze'){d.state='walk';d.t=2+rnd()*4;const hd=Math.hypot(d.herd.x-d.x,d.herd.z-d.z);d.dir=hd>14?Math.atan2(d.herd.x-d.x,d.herd.z-d.z)+(rnd()-.5)*.8:rnd()*6.28;}
         else{if(d.state==='flee'){d.herd={x:d.x,z:d.z};}d.state='graze';d.t=3+rnd()*7;}}
-      const spd=d.state==='flee'?9.5:d.state==='walk'?1.3:0;
+      const spd=d.state==='flee'?7.4:d.state==='walk'?1.3:0;
       if(spd){const nx=d.x+Math.sin(d.dir)*spd*dt,nz=d.z+Math.cos(d.dir)*spd*dt,nh=heightAt(nx,nz);
         if(nh<1.2||nh>60||zoneD(nx,nz)<ZONE.R*1.2||Math.hypot(nx,nz)>330||normalY(nx,nz)<.8)d.dir+=Math.PI*(.4+rnd()*.5);else{d.x=nx;d.z=nz;}}
       d.yaw+=angDiff(d.dir,d.yaw)*Math.min(1,dt*(spd>3?6:3));d.y=heightAt(d.x,d.z);
       d.ph+=dt*(spd>3?11:spd?5:0);const amp=spd>3?.85:spd?.4:0,s=Math.sin(d.ph)*amp;
       d.legs[0].rotation.x=s;d.legs[3].rotation.x=s;d.legs[1].rotation.x=-s;d.legs[2].rotation.x=-s;
       const tp=d.state==='graze'?1.6+Math.sin(elapsed*3+d.ph)*.06:d.state==='flee'?-.3:0;d.head.rotation.x+=(tp-d.head.rotation.x)*Math.min(1,dt*3);
-      d.g.position.set(d.x,d.y+(spd>3?Math.abs(Math.sin(d.ph))*.3:0),d.z);d.g.rotation.y=d.yaw;}
+      d.g.position.set(d.x,d.y+(spd>3?Math.abs(Math.sin(d.ph))*.3:0),d.z);d.g.rotation.y=d.yaw;if(d.ip)d.ip.set(d.x,d.y+1,d.z);}
     // rabbits
     for(const r of this.rabbits){const dist=Math.hypot(r.x-p.x,r.z-p.z);r.m.visible=dist<110;if(!r.m.visible)continue;
       if(dist<12&&grounded&&mode==='explore'&&r.state!=='flee'){r.state='flee';r.t=2.5;r.dir=Math.atan2(r.x-p.x,r.z-p.z);}
@@ -954,12 +961,12 @@ const Animals={deer:[],rabbits:[],ducks:[],fish:[],rings:[],fishMesh:null,jumpT:
         const nx=r.x+Math.sin(r.dir)*spd*dt,nz=r.z+Math.cos(r.dir)*spd*dt,nh=heightAt(nx,nz);if(nh<1.2||zoneD(nx,nz)<ZONE.R*1.2||normalY(nx,nz)<.82)r.dir+=2;else{r.x=nx;r.z=nz;}}
       r.yaw+=angDiff(r.dir,r.yaw)*Math.min(1,dt*8);r.m.position.set(r.x,heightAt(r.x,r.z)+hop,r.z);r.m.rotation.y=r.yaw;}
     // ducks
-    for(const d of this.ducks){const dist=Math.hypot(d.x-p.x,d.z-p.z);d.m.visible=dist<140;
+    for(const d of this.ducks){const dist=Math.hypot(d.x-p.x,d.z-p.z);d.m.visible=dist<140;if(d.dead){d.m.visible=false;continue;}if(water&&water.material.uniforms.uFrz.value>.5){d.m.position.set(d.x,.05,d.z);if(d.ip)d.ip.set(d.x,.25,d.z);continue;}
       d.t-=dt;if(d.t<=0||Math.hypot(d.tx-d.x,d.tz-d.z)<1){d.t=6+rnd()*8;for(let k=0;k<20;k++){const tx=d.x+(rnd()-.5)*24,tz=d.z+(rnd()-.5)*24;if(heightAt(tx,tz)<-1.6){d.tx=tx;d.tz=tz;break;}}}
       if(dist<9&&grounded){d.tx=d.x+(d.x-p.x)*2;d.tz=d.z+(d.z-p.z)*2;if(heightAt(d.tx,d.tz)>-1.2){d.tx=d.x;d.tz=d.z;}}
       const dir=Math.atan2(d.tx-d.x,d.tz-d.z),spd=dist<9?1.8:.7;d.yaw+=angDiff(dir,d.yaw)*Math.min(1,dt*2);
       const nx=d.x+Math.sin(d.yaw)*spd*dt,nz=d.z+Math.cos(d.yaw)*spd*dt;if(heightAt(nx,nz)<-1.2){d.x=nx;d.z=nz;}else d.t=0;
-      d.m.position.set(d.x,.02+Math.sin(elapsed*2+d.ph)*.03,d.z);d.m.rotation.set(Math.sin(elapsed*1.7+d.ph)*.05,d.yaw,0);}
+      d.m.position.set(d.x,.02+Math.sin(elapsed*2+d.ph)*.03,d.z);if(d.ip)d.ip.set(d.x,.25,d.z);d.m.rotation.set(Math.sin(elapsed*1.7+d.ph)*.05,d.yaw,0);}
     // fish
     this.jumpT-=dt;
     if(this.jumpT<=0){this.jumpT=2.5+rnd()*5;let best=null,bd=1e9;for(let i=0;i<5;i++){const f=this.fish[Math.floor(rnd()*this.fish.length)];if(f.jump>=0)continue;
@@ -1005,7 +1012,7 @@ const Hunt={g:null,legs:[],arms:[],head:null,eyes:[],state:'dormant',x:0,z:0,y:0
       s.position.set(x,.03,.2);s.scale.set(.16,.11,1);head.add(s);return s;});
     g.add(head);this.head=head;g.visible=false;scene.add(g);this.g=g;
   },
-  spawn(){const p=camera.position;camera.getWorldDirection(V1);V1.y=0;V1.normalize();
+  spawn(){SV.on&&SV.seenAlert();const p=camera.position;camera.getWorldDirection(V1);V1.y=0;V1.normalize();
     let x=p.x-V1.x*26,z=p.z-V1.z*26;if(zoneD(x,z)>ZONE.R*.95){const a=Math.atan2(z-ZONE.z,x-ZONE.x);x=ZONE.x+Math.cos(a)*ZONE.R*.9;z=ZONE.z+Math.sin(a)*ZONE.R*.9;}
     this.x=x;this.z=z;this.state='hunt';this.chaseT=0;this.outT=0;this.static=Math.max(this.static,.6);this.g.visible=true;Sound.stinger();},
   despawn(msg){this.state='dormant';this.g.visible=false;this.inT=0;if(msg)toast(msg);},
@@ -1123,7 +1130,7 @@ function puffTex(){const cv=document.createElement('canvas');cv.width=cv.height=
   return new THREE.CanvasTexture(cv);}
 
 /* ---------------- The cabin ---------------- */
-const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[false,false,false,false],bowl:'counter',bowlFood:-1,heat:0,emptyCan:-1,canOn:[],
+const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[false,false,false,false],bowl:'counter',bowlFood:null,heat:0,emptyCan:-1,canOn:[],
   wf:0,df:0,boxes:[],CAND:[[1.3,1.21,.2],[.75,1.21,.05],[1.75,1.09,2.45],[2.1,2.2,-2.3]],SX:-2.2,SZ:-1.75,
   build(){
     FROSTTEX=makeFrostTex();
@@ -1257,7 +1264,7 @@ const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[fa
     this.doorW=W(0,1.3,2.65);this.stoveW=W(SX,1.0,SZ+.45);this.smokeW=W(SX,5.25,SZ);this.bowlTopW=W(SX+.25,1.4,SZ+.18);
     this.boxes=[[-3.45,3.45,-2.85,-2.47],[-3.35,-2.97,-2.9,2.9],[2.97,3.35,-2.9,2.9],[-3.45,-.55,2.47,2.85],[.55,3.45,2.47,2.85],
       [SX-.45,SX+.45,SZ-.4,SZ+.4],[-1.64,-.96,-2.5,-1.96],[-.62,.92,-2.52,-1.96],[1.3,2.9,-2.5,-2.1],[.3,1.7,-.12,.72],[1.95,3.0,.6,2.45],[2.96,3.34,4.08,4.34],[-3.34,-2.96,4.08,4.34],[-5.15,-4.45,3.05,3.75]];
-    this.addInteractions();this.build3(W,G,mat);this.reset();
+    this.addInteractions();this.build3(W,G,mat);this.build4();this.reset();
   },
   addInteractions(){const W=this.W,SX=this.SX,SZ=this.SZ,F=i=>FOODS[i][0];
     INT.push({p:W(0,1.35,2.65),r:.55,label:()=>this.door?'Close the door':'Open the door',act:()=>{this.door=!this.door;Sound.creak();}});
@@ -1268,25 +1275,25 @@ const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[fa
         return {hint:'The wood burner is full'};},
       act:()=>{if(!this.lit&&this.fuel>0&&SV.matches){this.lit=true;SV.everLit=true;Sound.strike();SV.say('The fire catches. Smoke rises from the chimney.',3000);}
         else if(SV.wood>0&&this.fuel<3.95){SV.wood--;this.fuel=Math.min(4,this.fuel+1);Sound.thunk();}}});
-    INT.push({p:W(SX+.25,1.4,SZ+.18),r:.2,inCab:1,label:()=>{const h=SV.held;
+    void({p:W(SX+.25,1.4,SZ+.18),r:.2,inCab:1,label:()=>{const h=SV.held;
         if(h&&h.type==='bowl')return this.lit?'Set the bowl on the wood burner':{hint:'Light the wood burner first'};
         if(this.bowl==='stove'&&!SV.ate){if(this.heat<1)return {hint:'The '+F(this.bowlFood)+' is warming up ('+Math.round(this.heat*100)+'%)'};return 'Eat the '+F(this.bowlFood);}
         return null;},
       act:()=>{const h=SV.held;if(h&&h.type==='bowl'){SV.held=null;this.bowl='stove';this.heat=0;Sound.clink();}
         else if(this.bowl==='stove'&&this.heat>=1){SV.ate=true;SV.eatenName=F(this.bowlFood);SV.cold=Math.max(0,SV.cold-.5);Sound.eat();SV.say('Hot food. Warmth spreads through you.',3000);}}});
     this.CAND.forEach((c,i)=>INT.push({p:W(c[0],c[1]+.13,c[2]),r:.1,inCab:1,label:()=>this.candles[i]?null:(SV.matches?'Light the candle':{hint:'You need matches. They are on the table.'}),act:()=>{this.candles[i]=true;Sound.strike();}}));
-    FOODS.forEach((f,i)=>{const c=this.canP[i];INT.push({p:W(c[0],c[1]+.056,c[2]),r:.065,inCab:1,label:()=>{
+    FOODS.forEach((f,i)=>{const c=this.canP[i];void({p:W(c[0],c[1]+.056,c[2]),r:.065,inCab:1,label:()=>{
         if(!this.canOn[i]||SV.ate||this.bowlFood>=0)return null;const h=SV.held;if(!h)return 'Take the can of '+f[0];if(h.type==='can'&&!h.opened)return 'Swap for the '+f[0];return null;},
       act:()=>{const h=SV.held;if(h&&h.type==='can')this.canOn[h.i]=true;this.canOn[i]=false;SV.held={type:'can',i,opened:false};Sound.clink();}});});
     const openCan=()=>{if(this.opening)return;this.opening={t:0,i:SV.held.i};Sound.crank();};
     this.openCan=openCan;
     INT.push({p:W(-.2,1.39,-2.25),r:.32,inCab:1,label:()=>{if(this.opening)return {hint:'Opening the can...'};const h=SV.held;if(h&&h.type==='can'&&!h.opened)return 'Open the '+F(h.i)+' with the can opener';
-        if(!h&&this.bowlFood<0&&!SV.ate)return {hint:'A can opener. Pick a can from the pantry shelf.'};return null;},act:()=>{if(!this.opening)openCan();}});
-    INT.push({p:W(.4,1.41,-2.2),r:.14,inCab:1,label:()=>{if(this.bowl!=='counter')return null;const h=SV.held;
+        if(!h)return {hint:'A can opener. Pick a can from the pantry shelf.'};return null;},act:()=>{if(!this.opening)openCan();}});
+    void({p:W(.4,1.41,-2.2),r:.14,inCab:1,label:()=>{if(this.bowl!=='counter')return null;const h=SV.held;
         if(this.opening)return {hint:'Opening the can...'};if(h&&h.type==='can'&&h.opened)return 'Pour the '+F(h.i)+' into the metal bowl';if(h&&h.type==='can')return 'Open the '+F(h.i)+' with the can opener';return {hint:'A metal bowl'};},
       act:()=>{const h=SV.held;if(h&&h.type==='can'&&!h.opened){this.openCan();return;}this.bowlFood=h.i;this.emptyCan=h.i;SV.held={type:'bowl'};this.bowl='held';Sound.pour();}});
   },
-  reset(){this.door=false;this.doorA=0;this.fuel=0;this.lit=false;this.candles=[false,false,false,false];this.bowl='counter';this.bowlFood=-1;this.heat=0;this.emptyCan=-1;
+  reset(){this.door=false;this.doorA=0;this.fuel=0;this.lit=false;this.candles=[false,false,false,false];this.bowl='counter';this.bowlFood=null;this.heat=0;this.emptyCan=-1;
     this.canOn=FOODS.map(()=>true);this.wf=0;this.df=0;this.opening=null;if(this.openG)this.openG.visible=false;if(this.cable){this.cableT=0;this.setCable(0);}if(this.matchMesh)this.matchMesh.visible=true;
     if(this.canL){FOODS.forEach((f,i)=>{this.canL.setMatrixAt(i,this.canM[i]);this.canT.setMatrixAt(i,this.canM[i]);});this.canL.instanceMatrix.needsUpdate=this.canT.instanceMatrix.needsUpdate=true;}},
   local(x,z){return cabLocal(x,z);},
@@ -1295,7 +1302,7 @@ const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[fa
       if(l[0]>-3.42&&l[0]<3.42&&l[1]>-2.92&&l[1]<4.37)return CAB.y+.45;if(Math.abs(l[0])<.72&&l[1]>=4.37&&l[1]<4.77)return CAB.y+.22;}
     return heightAt(x,z);},
   collide(p){if(Math.abs(p.x-CAB.x)>9||Math.abs(p.z-CAB.z)>9)return;const l=cabLocal(p.x,p.z);let lx=l[0],lz=l[1];const r=.3;
-    const bs=this.doorA>-.45?this.boxes.concat([[-.55,.55,2.47,2.85]]):this.boxes;
+    let bs=this.doorA>-.45?this.boxes.concat([[-.55,.55,2.47,2.85]]):this.boxes;if(!Shed.broken)bs=bs.concat([[-3.0,-2.2,-5.7,-5.5]]);
     for(const b of bs){const cx=clamp(lx,b[0],b[1]),cz=clamp(lz,b[2],b[3]);let dx=lx-cx,dz=lz-cz;const d2=dx*dx+dz*dz;if(d2>=r*r)continue;
       if(d2>1e-8){const d=Math.sqrt(d2);lx=cx+dx/d*r;lz=cz+dz/d*r;}
       else{const pen=[lx-b[0],b[1]-lx,lz-b[2],b[3]-lz],m=Math.min(...pen);if(m===pen[0])lx=b[0]-r;else if(m===pen[1])lx=b[1]+r;else if(m===pen[2])lz=b[2]-r;else lz=b[3]+r;}}
@@ -1321,21 +1328,21 @@ const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[fa
     if(ch)this.canL.instanceMatrix.needsUpdate=this.canT.instanceMatrix.needsUpdate=true;
     // bowl
     this.bowlM.visible=this.bowl!=='held';
-    if(this.bowl==='counter')this.bowlM.position.set(.4,1.36,-2.2);else if(this.bowl==='stove')this.bowlM.position.set(this.SX+.25,1.31,this.SZ+.18);
-    const bf=this.bowlM.userData.food;bf.visible=this.bowlFood>=0&&!SV.ate;if(this.bowlFood>=0)bf.material.color.setHex(FOODS[this.bowlFood][2]);
-    if(this.bowl==='stove'&&this.lit&&!SV.ate)this.heat=Math.min(1,this.heat+dt/30);
-    this.emptyCanM.visible=this.emptyCan>=0;if(this.emptyCan>=0)this.emptyCanM.userData.l.material.color.setHex(FOODS[this.emptyCan][1]);
+    if(this.bowl==='counter')this.bowlM.position.set(.15,1.36,-2.2);else if(this.bowl==='stove')this.bowlM.position.set(this.SX+.25,1.31,this.SZ+.18);
+    Meal.bowlVisual(this.bowlM.userData.food);
+    if(this.bowl==='stove'&&this.lit&&this.bowlFood)this.heat=Math.min(1,this.heat+dt/(this.bowlFood.meat?50:30));
+    this.emptyCanM.visible=false;
     this.updateCable(dt);
     if(this.opening){const o=this.opening;o.t+=dt;this.openG.visible=true;this.openLabel.color.setHex(FOODS[o.i][1]);this.crank.rotation.y=o.t*10;
       const lift=Math.max(0,o.t-1.1);this.openLid.position.y=.105+lift*.35;this.openLid.rotation.z=lift*2.5;
       if(o.t>=1.5){this.opening=null;this.openG.visible=false;this.openLid.position.y=.105;this.openLid.rotation.z=0;if(SV.held&&SV.held.type==='can')SV.held.opened=true;SV.hudT=0;SV.lastPrompt=null;}}
     // held
-    const h=SV.held;this.heldCan.visible=!!(h&&h.type==='can')&&!this.opening;this.heldBowl.visible=!!(h&&h.type==='bowl');
+    const h=SV.held;this.heldCan.visible=!!(h&&(h.type==='can'||h.type==='empty'))&&!this.opening;this.heldBowl.visible=!!(h&&(h.type==='bowl'||h.type==='dirty'));
     if(h&&h.type==='can'){const u=this.heldCan.userData;u.l.material.color.setHex(FOODS[h.i][1]);u.top.visible=!h.opened;u.food.visible=h.opened;u.food.material.color.setHex(FOODS[h.i][2]);}
-    if(h&&h.type==='bowl'){this.heldBowl.userData.food.material.color.setHex(FOODS[this.bowlFood][2]);}
+    if(h&&(h.type==='bowl'||h.type==='dirty'))Meal.bowlVisual(this.heldBowl.userData.food);
     this.heldLan.visible=SV.lantern;this.lanLight.intensity=SV.lantern?1.6*(.94+.06*Math.sin(elapsed*9)):0;
     // frost on glass
-    const g=SV.gt,act=SV.on||SV.won;const wt=act?smooth(26.06,26.7,g)*(this.lit?.8:1):0,dtg=act?smooth(26.12,26.8,g)*(this.lit?.75:1):0;
+    const g=SV.g2(),act=SV.on;const thaw=1-smooth(31,33,g);const wt=act?smooth(26.06,26.7,g)*(this.lit?.8:1)*thaw:0,dtg=act?smooth(26.12,26.8,g)*(this.lit?.75:1)*thaw:0;
     this.wf+=(wt-this.wf)*Math.min(1,dt*(wt>this.wf?.8:.08));this.df+=(dtg-this.df)*Math.min(1,dt*(dtg>this.df?.8:.08));
     if(!act){this.wf=wt;this.df=dtg;}
     this.glass.uniforms.uFrost.value=this.wf;this.doorFrost.uniforms.uFrost.value=this.df;
@@ -1354,6 +1361,8 @@ const Wood={pieces:[],mesh:null,glint:null,
     let tries=0;while(P.length<18&&tries<4000){tries++;const a=rnd()*6.283,r=18+rnd()*95,x=CAB.x+Math.cos(a)*r,z=CAB.z+Math.sin(a)*r,h=heightAt(x,z);
       if(h<1.8||normalY(x,z)<.8||zoneD(x,z)<ZONE.R*1.3||Math.abs(x-riverX(z))<riverW(z)+5||Math.hypot(x,z)>330)continue;
       if(P.some(q=>Math.hypot(q[0]-x,q[1]-z)<13))continue;P.push([x,z]);}
+    {let t2=0,n2=0;while(n2<12&&t2<3000){t2++;const a=rnd()*6.283,r=Math.sqrt(rnd())*ZONE.R*.85,x=ZONE.x+Math.cos(a)*r,z=ZONE.z+Math.sin(a)*r,h=heightAt(x,z);
+      if(h<1.5||normalY(x,z)<.75||P.some(q=>Math.hypot(q[0]-x,q[1]-z)<7))continue;P.push([x,z]);n2++;}}
     this.mesh=new THREE.InstancedMesh(geo,lambertVC,P.length);this.mesh.frustumCulled=false;scene.add(this.mesh);
     const gp=new Float32Array(P.length*3),on=new Float32Array(P.length).fill(1);
     P.forEach(([x,z],i)=>{const y=heightAt(x,z),m=new THREE.Matrix4().makeRotationY(rnd()*6.28).setPosition(x,y+.02,z);
@@ -1385,7 +1394,7 @@ const Smoke={P:[],S:[],t:0,st:0,
       const wx=BREEZE.x*(1-g)*1.3+WD.x*g*11,wz=BREEZE.z*(1-g)*1.3+WD.z*g*11;
       p.m.position.x+=(p.v.x+wx*Math.min(1,p.age*.6))*dt;p.m.position.z+=(p.v.z+wz*Math.min(1,p.age*.6))*dt;p.m.position.y+=p.v.y*dt*(1-g*.7);p.v.y*=1-dt*.06;
       const s=.7+p.age*(.7+g*.6);p.m.scale.set(s,s,1);p.m.material.opacity=.55*smooth(0,.5,p.age)*Math.pow(1-t,1.3);p.m.material.color.setRGB(b,b,b*1.05);p.m.material.rotation+=dt*.15;}
-    this.st-=dt;const hot=Cabin.bowl==='stove'&&Cabin.heat>.35&&!SV.ate;
+    this.st-=dt;const hot=Cabin.bowl==='stove'&&Cabin.heat>.35&&!!Cabin.bowlFood;
     if(hot&&this.st<=0){this.st=.35;const p=this.S.find(q=>q.age>=q.life);if(p){p.age=0;p.life=1.8;p.m.position.copy(Cabin.bowlTopW);p.m.visible=true;}}
     for(const p of this.S){if(p.age>=p.life){p.m.visible=false;continue;}p.age+=dt;const t=p.age/p.life;p.m.position.y+=dt*.35;p.m.position.x+=Math.sin(elapsed*3+p.life)*dt*.05;
       const s=.08+t*.25;p.m.scale.set(s,s,1);p.m.material.opacity=.35*Math.sin(t*3.14)*Cabin.heat;}}
@@ -1688,7 +1697,6 @@ Object.assign(Cabin,{
     P(bx(-1.32,-1.22,1.19,1.27,2.0,2.08),0x1d1d1f);P(new THREE.CylinderGeometry(.012,.012,.12,5).translate(-1.27,1.33,2.04),0x1d1d1f);
     // antenna lead up the wall
     const tube=(pts,r,c)=>{const cp=new THREE.CurvePath();for(let i=0;i<pts.length-1;i++)cp.add(new THREE.LineCurve3(new THREE.Vector3(...pts[i]),new THREE.Vector3(...pts[i+1])));P(new THREE.TubeGeometry(cp,pts.length*6,r,4,false),c);};
-    tube([[-1.75,1.3,2.43],[-1.75,2.7,2.45],[-.9,2.75,2.45]],.008,0x2a2a2a);
     // solar panel on the left roof slope, wire down to the battery
     const ang=Math.atan2(1.8,3.75),d=new THREE.Vector3(Math.cos(ang),Math.sin(ang),0),n=new THREE.Vector3(-Math.sin(ang),Math.cos(ang),0);
     const ry=x=>3.73+Math.tan(ang)*(x+1.875)+.08/Math.cos(ang);const P0=new THREE.Vector3(-1.9,ry(-1.9),1.35);
@@ -1734,7 +1742,7 @@ Object.assign(Cabin,{
     const hg=new THREE.Group();hg.position.set(1.4,1.16,-4.4);hg.add(new THREE.Mesh(part([[new THREE.CylinderGeometry(.018,.018,.7,6).rotateZ(Math.PI/2).translate(-.33,0,0),0x2a3a2e],[new THREE.CylinderGeometry(.03,.03,.14,6).rotateZ(Math.PI/2).translate(-.66,0,0),0x5e4129]]),lambertVC));G.add(hg);Pump.handle=hg;
     const bm=addIce(new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));
     const bucket=new THREE.Mesh(part([[new THREE.CylinderGeometry(.17,.14,.32,14,1,true).translate(0,.16,0),0x8a8f96],[new THREE.CircleGeometry(.14,14).rotateX(-Math.PI/2).translate(0,.01,0),0x6a6f76],[new THREE.TorusGeometry(.17,.008,4,14,Math.PI).translate(0,.32,0),0x5a5f66]]),bm);
-    bucket.position.set(1.72,.12,-4.4);G.add(bucket);
+    bucket.position.set(1.72,.12,-4.4);G.add(bucket);Pump.bucket=bucket;
     Pump.water=new THREE.Mesh(new THREE.CircleGeometry(.155,14).rotateX(-Math.PI/2),new THREE.MeshLambertMaterial({color:0x5c7f90}));Pump.water.position.set(1.72,.15,-4.4);G.add(Pump.water);
     Pump.stream=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.5,5),new THREE.MeshLambertMaterial({color:0x8fb4c8,transparent:true,opacity:.7}));Pump.stream.position.set(1.72,.55,-4.4);G.add(Pump.stream);
     // interactions
@@ -1746,9 +1754,9 @@ Object.assign(Cabin,{
     INT.push({p:W(-1.75,1.31,2.27),r:.28,inCab:1,label:()=>Radio.power?'Use the ham radio':Radio.want?{hint:'Connecting...'}:'Connect the radio cable to the battery',act:()=>{if(Radio.power)Radio.openPanel();else plug();}});
     INT.push({p:W(-2.46,.5,1.9),r:.3,inCab:1,off:()=>Radio.want,label:plugLabel,act:plug});
     INT.push({p:W(-2.78,.62,2.2),r:.32,inCab:1,label:()=>Radio.want?(Radio.power?'Disconnect the radio from the battery':null):'Connect the radio cable to the battery',act:()=>{Radio.want=!Radio.want;Radio.power=false;Sound.clink();if(0)SV.say('The radio lights up. The solar panel keeps the battery charged.',3000);}});
-    INT.push({p:W(1.4,1.05,-4.4),r:.32,label:()=>ICE.uIce.value>.5?{hint:'The pump is frozen solid'}:Pump.fill>=1?{hint:'The bucket is full'}:'Pump water into the bucket',
+    void({p:W(1.4,1.05,-4.4),r:.32,label:()=>ICE.uIce.value>.5?{hint:'The pump is frozen solid'}:Pump.fill>=1?{hint:'The bucket is full'}:'Pump water into the bucket',
       act:()=>{Pump.anim=1.2;Pump.fill=Math.min(1,Pump.fill+.34);Sound.noise(.5,600,1,.18);setTimeout(()=>Sound.noise(.7,900,.5,.15,'lowpass'),300);}});
-    INT.push({p:W(1.72,.3,-4.4),r:.2,label:()=>Pump.fill>=1?'Drink from the bucket':Pump.fill>0?{hint:'The bucket is partly full'}:{hint:'An empty bucket. Use the hand pump.'},
+    void({p:W(1.72,.3,-4.4),r:.2,label:()=>Pump.fill>=1?'Drink from the bucket':Pump.fill>0?{hint:'The bucket is partly full'}:{hint:'An empty bucket. Use the hand pump.'},
       act:()=>{Pump.fill=0;Sound.noise(.4,500,.6,.15,'lowpass');SV.say('Ice-cold well water. You feel more awake.',2600);stamina=100;}});
   }
 });
@@ -1763,6 +1771,284 @@ Object.assign(SV,{seat:null,swim:false,wasSwim:false,splT:0,zoomT:60,
 
 Radio.init();
 canvas.addEventListener('wheel',e=>{e.preventDefault();SV.zoomT=clamp(SV.zoomT*(e.deltaY>0?1.12:1/1.12),15,75);},{passive:false});
+/* ================= FROSTFALL round 3: hunger, chores, day 2, shed & hunting, tower, battery, radio audio, music ================= */
+const MC1=new THREE.Color(),MC2=new THREE.Color();
+const Meal={
+  ofCan(i){return {name:FOODS[i][0],raw:FOODS[i][2],cooked:FOODS[i][2],meat:false};},
+  meat(kind){return kind==='duck'?{name:'duck',raw:0xc0675a,cooked:0x6e3b1e,meat:true}:{name:'venison',raw:0x9a2a2a,cooked:0x4a2618,meat:true};},
+  bowlVisual(mesh){const f=Cabin.bowlFood;if(Cabin.dirty){mesh.visible=true;mesh.material.color.setHex(0x6a5a48);mesh.scale.setScalar(.55);return;}
+    mesh.scale.setScalar(1);mesh.visible=!!f;if(f){MC1.setHex(f.raw).lerp(MC2.setHex(f.cooked),f.meat?Cabin.heat:0);mesh.material.color.copy(MC1);}}
+};
+const Shed={broken:false,door:null,axe:null,lock:null,
+  reset(){this.broken=false;this.pose();if(this.axe)this.axe.visible=true;},
+  pose(){if(!this.door)return;this.door.rotation.set(0,this.broken?-1.75:0,this.broken?.18:0);this.door.position.y=this.broken?-.08:0;
+    this.lock.position.set(this.broken?-2.45:-2.24,this.broken?.03:1.1,this.broken?-5.2:-5.52);this.lock.rotation.z=this.broken?1.3:0;},
+  inside(){const l=cabLocal(camera.position.x,camera.position.z);return l[0]>-3.55&&l[0]<-1.65&&l[1]>-7.55&&l[1]<-5.45;}
+};
+const Hunting={swing:0,
+  init(){
+    Animals.deer.forEach(d=>{d.ip=new THREE.Vector3(d.x,d.y+1,d.z);INT.push({p:d.ip,r:1,max:6.2,off:()=>!SV.axe||!!SV.held||d.dead||!d.g.visible,label:()=>'Hunt the deer with the axe',
+      act:()=>{d.dead=true;d.g.visible=false;this.swing=.45;Sound.thunk();SV.held={type:'meat',kind:'venison'};SV.hunted=true;SV.say('You bring the deer down and carry back a cut of venison.',3200);}});});
+    Animals.ducks.forEach(d=>{d.ip=new THREE.Vector3(d.x,.25,d.z);INT.push({p:d.ip,r:.5,max:3,off:()=>!SV.axe||!!SV.held||d.dead||!d.m.visible,label:()=>'Hunt the duck with the axe',
+      act:()=>{d.dead=true;d.m.visible=false;this.swing=.45;Sound.thunk();SV.held={type:'meat',kind:'duck'};SV.hunted=true;SV.say('You take the duck. It will need cooking.',3000);}});});},
+  reset(){Animals.deer.forEach(d=>{d.dead=false;});Animals.ducks.forEach(d=>{d.dead=false;});}
+};
+/* ---------- radio battery, special stations ---------- */
+Radio.batt=2.5;
+RADIO_STATIONS.push(
+  {b:5,f:15.000,name:'WWV · NIST time signal, Fort Collins, Colorado',type:'wwv',lines:[]},
+  {b:1,f:7.030,name:'CW (Morse code) · KB1ICE · 18 words per minute',type:'cw',msg:'CQ CQ CQ DE KB1ICE KB1ICE = THE GLASS COMES AT TWO = STAY BY YOUR FIRE = DO NOT ANSWER THE DOOR = 73 K',lines:[]});
+RADIO_STATIONS.forEach(s=>{if(s.name.startsWith('Unidentified numbers'))s.type='num';});
+Radio.station=function(){const B=this.BANDS[this.band],f=this.f[this.band];let best=null,bs=0;const tight=ICE.uIce.value>.95?1.01:3.01;
+  for(const s of RADIO_STATIONS){if(s.b!==this.band)continue;const st=1-Math.abs(s.f-f)/(B[3]*tight);if(st>bs){bs=st;best=s;}}return best?{s:best,st:bs}:null;};
+Radio.pool=function(){const s=this.cur;if(!s)return[];const g=SV.g2();return (g>=26&&g<31&&s.storm)?s.storm:s.lines;};
+const MORSE={A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..',
+  0:'-----',1:'.----',2:'..---',3:'...--',4:'....-',5:'.....',6:'-....',7:'--...',8:'---..',9:'----.','=':'-...-'};
+const DIG=['zero','one','two','three','four','five','six','seven','eight','nine'];
+const RFX={st:null,t0:0,
+  speak(w){try{if(!window.speechSynthesis||!speechSynthesis.getVoices().length)return false;const u=new SpeechSynthesisUtterance(w);u.rate=.62;u.pitch=.25;u.volume=.9;
+    const v=speechSynthesis.getVoices().find(v=>/en/i.test(v.lang)&&/female|zira|samantha|fiona|karen/i.test(v.name))||speechSynthesis.getVoices().find(v=>/en/i.test(v.lang));if(v)u.voice=v;speechSynthesis.speak(u);return true;}catch(e){return false;}},
+  beep(t,f,dur,vol,dest){const c=Sound.ctx,o=c.createOscillator(),g=c.createGain();o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.002);g.gain.setValueAtTime(vol,t+dur);g.gain.linearRampToValueAtTime(0,t+dur+.003);
+    o.connect(g).connect(dest||Sound.master);o.start(t);o.stop(t+dur+.02);},
+  stop(){if(this.osc){try{this.osc.stop();}catch(e){}this.osc=null;}if(this.og){this.og.disconnect();this.og=null;}try{window.speechSynthesis&&speechSynthesis.cancel();}catch(e){}this.ev=null;this.st=null;},
+  start(s){this.stop();this.st=s;this.t0=performance.now()/1000;this.ls=-1;this.log=[];
+    if(s.type==='cw'){let t=0;const U=1.2/18;this.chars=[];
+      for(const ch of s.msg){if(ch===' '){t+=U*4;this.chars.push({c:' ',a:t,b:t});continue;}const code=MORSE[ch]||'';const a=t,els=[];for(const e of code){const d=e==='.'?U:U*3;els.push([t,t+d]);t+=d+U;}t+=U*2;this.chars.push({c:ch,code,a,b:t,els});}
+      this.total=t+3;this.cwT0=-1;}
+    if(s.type==='num'){const groups=['74410','09826','63305','18872','74410'];this.ev=[];let t=3.4;this.ev.push({t:0,f:'chime'});
+      for(const g of groups){for(const d of g){this.ev.push({t,d:+d});t+=1.15;}t+=2.2;}this.ev.push({t:t+6,f:'loop'});this.evI=0;this.numLine='';}},
+  update(dt){
+    const on=Radio.open&&Radio.power&&Radio.cur&&Radio.cur.type&&Radio.sig>.2;if(!on){if(this.st)this.stop();return;}
+    const s=Radio.cur;if(this.st!==s)this.start(s);const now=performance.now()/1000-this.t0,el=$('rpText'),snd=Sound.on&&Sound.ctx;
+    const head=`<p class="hd">— ${s.name} —</p>`;
+    if(s.type==='wwv'){const d=new Date(),sec=d.getUTCSeconds(),m=d.getUTCMinutes(),h=d.getUTCHours();
+      if(snd&&!this.osc){const c=Sound.ctx;this.osc=c.createOscillator();this.og=c.createGain();this.og.gain.value=0;this.osc.connect(this.og).connect(Sound.master);this.osc.start();}
+      if(sec!==this.ls){this.ls=sec;if(snd){const c=Sound.ctx,t=c.currentTime+.02;
+          if(sec===0)this.beep(t,m===0?1500:1000,.8,.22);else if(sec!==29&&sec!==59)this.beep(t,1000,.005,.4);
+          const toneOn=sec>=1&&sec<45&&sec!==29;this.osc.frequency.setValueAtTime(m%2?600:500,t);this.og.gain.setValueAtTime(0,t-.01);this.og.gain.setValueAtTime(toneOn?.035:0,t+.035);}
+        if(sec===52){const nm=(m+1)%60,nh=nm===0?(h+1)%24:h;const txt='At the tone, '+nh+' hours '+nm+' minute'+(nm===1?'':'s')+' Coordinated Universal Time.';this.log.push(txt);if(this.log.length>3)this.log.shift();if(snd)this.speak(txt);}
+        const pad=v=>String(v).padStart(2,'0');
+        el.innerHTML=head+`<p class="dim">UTC ${pad(h)}:${pad(m)}:${pad(sec)} · ${'|'.repeat(sec%10+1)}</p><p>National Institute of Standards and Technology time. A tick every second, a long tone at the top of each minute.</p>`+this.log.map(t=>`<p>${t}</p>`).join('')+(snd?'':'<p class="dim">Turn on Sound to hear the ticks and tones.</p>');}
+      return;}
+    if(s.type==='cw'){if(snd&&this.cwT0<0){const c=Sound.ctx;this.osc=c.createOscillator();this.osc.frequency.value=700;this.og=c.createGain();this.og.gain.value=0;this.osc.connect(this.og).connect(Sound.master);this.osc.start();}
+      const loopT=now%this.total,loopN=Math.floor(now/this.total);
+      if(snd&&this.cwT0!==loopN){this.cwT0=loopN;const c=Sound.ctx,base=c.currentTime-loopT+.05;const g=this.og.gain;g.cancelScheduledValues(c.currentTime);
+        for(const ch of this.chars)if(ch.els)for(const [a,b] of ch.els){if(base+b<c.currentTime)continue;g.setValueAtTime(0,base+a);g.linearRampToValueAtTime(.09,base+a+.004);g.setValueAtTime(.09,base+b-.004);g.linearRampToValueAtTime(0,base+b);}}
+      let txt='',cur='';for(const ch of this.chars){if(ch.a>loopT)break;if(ch.b<=loopT)txt+=ch.c;else cur=ch.code||'';}
+      el.innerHTML=head+`<p style="font-family:var(--mono);color:#ffb347;letter-spacing:.2em;min-height:1.5em">${cur.replace(/\./g,'•').replace(/-/g,'—')}</p><p style="font-family:var(--mono)">${Radio.garble(txt)}<span class="cur">▌</span></p>`+(snd?'':'<p class="dim">Turn on Sound to hear the Morse code.</p>');return;}
+    if(s.type==='num'){while(this.ev&&this.evI<this.ev.length&&this.ev[this.evI].t<=now){const e=this.ev[this.evI++];
+        if(e.f==='chime'){this.numLine='';if(snd){const c=Sound.ctx,t=c.currentTime+.05;[880,784,659,587,523,587,523].forEach((f,i)=>{Sound.tone(f,f*.995,t+i*.42,1.2,.05,'sine');Sound.tone(f*2,f*2,t+i*.42,.5,.012,'sine');});}}
+        else if(e.f==='loop'){this.t0=performance.now()/1000;this.evI=0;}
+        else{this.numLine+=(this.numLine.replace(/ /g,'').length%5===0&&this.numLine?'   ':' ')+e.d;if(snd&&!this.speak(DIG[e.d])){const c=Sound.ctx;Sound.tone(300+e.d*35,(300+e.d*35)*.97,c.currentTime+.02,.45,.07,'triangle');}}}
+      el.innerHTML=head+`<p style="font-family:var(--mono);font-size:18px;color:#ffb347;letter-spacing:.12em">${this.numLine||'· · ·'}</p><p class="dim">A flat, slow voice reads groups of five digits. Nobody knows who it is for.</p>`+(snd?'':'<p class="dim">Turn on Sound to hear it.</p>');}
+  }
+};
+const _radioUpdate=Radio.update.bind(Radio);Radio.update=function(dt){_radioUpdate(dt);RFX.update(dt);};
+const _radioDraw=Radio.draw.bind(Radio);Radio.draw=function(){if(this.cur&&this.cur.type&&this.sig>.2){const b=Math.round(this.sig*9);$('rpS').textContent='S'+b+' '+'\u2588'.repeat(b)+'\u2591'.repeat(9-b);return;}_radioDraw();};
+/* ---------- creepy classical: Bach Toccata in D minor (public domain), organ synth, only while the world is frozen ---------- */
+const Music={on:false,next:0,
+  seq(){const S=[],ph=(o,t)=>{const n=[[81,.11],[79,.11],[81,1.3],[0,.35],[79,.13],[77,.13],[76,.13],[74,.13],[73,.6],[74,1.7],[0,1.1]];for(const [m,d] of n){if(m)S.push([t,m+o,d*1.4]);t+=d*1.4;}return t;};
+    let t=ph(0,0);t=ph(-12,t);t=ph(-24,t);[38,49,52,55,58,61,64].forEach((m,i)=>S.push([t+i*.28,m,5.5-i*.28]));t+=6.2;[38,45,50,53,57,62].forEach(m=>S.push([t,m,6]));t+=7;return {S,L:t+22};},
+  voice(t,m,d){const c=Sound.ctx,f=440*Math.pow(2,(m-69)/12),g=c.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.05,t+.06);g.gain.setValueAtTime(.05,t+d);g.gain.linearRampToValueAtTime(0,t+d+.6);g.connect(this.out);
+    [[f,'sine',1],[f*.5,'triangle',.55],[f*2.003,'sine',.22],[f*1.006,'sine',.5]].forEach(([fr,ty,a])=>{const o=c.createOscillator(),og=c.createGain();o.type=ty;o.frequency.value=fr;og.gain.value=a;o.connect(og).connect(g);o.start(t);o.stop(t+d+.7);});},
+  update(){const want=Sound.on&&ICE.uIce.value>.95;if(!Sound.ctx)return;const c=Sound.ctx;
+    if(!this.out){this.out=c.createGain();this.out.gain.value=0;const dl=c.createDelay(1);dl.delayTime.value=.37;const fb=c.createGain();fb.gain.value=.42;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;
+      this.out.connect(Sound.master);this.out.connect(dl);dl.connect(lp).connect(fb).connect(dl);lp.connect(Sound.master);if(!this.q)this.q=this.seq();}
+    this.out.gain.setTargetAtTime(want?1:0,c.currentTime,want?2:.8);
+    if(want&&c.currentTime>this.next-1.5){const t0=Math.max(c.currentTime+.2,this.next);for(const [t,m,d] of this.q.S)this.voice(t0+t,m,d);this.next=t0+this.q.L;}
+    if(!want&&this.next>c.currentTime+30)this.next=c.currentTime;}
+};
+/* ---------- cabin extras: tower, battery meter, trash, basin, shed ---------- */
+Object.assign(Cabin,{dirty:false,basin:0,trash:0,
+  build4(){const G=this.G,W=this.W,mat=this.mat,L=[],P=(g,c,sh)=>L.push([g,c,sh]);let k=500;const vr=a=>{const s=1-a/2+a*hash(k++,91);return ()=>s;};
+    const seg=(a,b,r,c)=>{const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b),d=B.clone().sub(A),len=d.length();const g=new THREE.CylinderGeometry(r,r,len,4).translate(0,len/2,0);
+      g.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize())));g.translate(A.x,A.y,A.z);P(g,c);};
+    // antenna tower (triangular lattice)
+    const TX=-5.6,TZ=.6,H=10,legs=[0,1,2].map(i=>{const a=i/3*6.283+.3;return [TX+Math.cos(a)*.28,TZ+Math.sin(a)*.28];});
+    legs.forEach(l=>seg([l[0],0,l[1]],[l[0],H,l[1]],.025,0x8a8d90));
+    for(let y=0;y<H-.3;y+=.6)for(let i=0;i<3;i++){const a=legs[i],b=legs[(i+1)%3];seg([a[0],y,a[1]],[b[0],y+.6,b[1]],.008,0x9a9da0);seg([a[0],y+.6,a[1]],[b[0],y+.6,b[1]],.008,0x9a9da0);}
+    seg([TX,H-.2,TZ],[TX,H+1.4,TZ],.03,0x7a7d80);seg([TX-1.3,H+.9,TZ],[TX+1.3,H+.9,TZ],.025,0x7a7d80);
+    [-1.2,-.6,0,.6,1.2].forEach((x,i)=>{const hl=.78-i*.06;seg([TX+x,H+.9,TZ-hl],[TX+x,H+.9,TZ+hl],.012,0xb0b3b6);});
+    seg([TX,H+1.4,TZ],[TX,H+3.2,TZ],.008,0xb0b3b6);P(bx(TX-.4,TX+.4,0,.12,TZ-.4,TZ+.4),0x8a8780);
+    // coax: tower -> wall -> radio
+    const tube=(pts,r,c)=>{const cp=new THREE.CurvePath();for(let i=0;i<pts.length-1;i++)cp.add(new THREE.LineCurve3(new THREE.Vector3(...pts[i]),new THREE.Vector3(...pts[i+1])));P(new THREE.TubeGeometry(cp,pts.length*8,r,4,false),c);};
+    tube([[TX+.25,H+.85,TZ],[legs[0][0]+.04,H-.4,legs[0][1]],[legs[0][0]+.04,.3,legs[0][1]],[-5.1,.05,1.6],[-3.55,.05,2.2],[-3.36,.5,2.2],[-3.36,2.55,2.2],[-2.97,2.55,2.2],[-2.97,2.55,2.45],[-1.75,2.55,2.45],[-1.75,1.4,2.44]],.016,0x1a1a1a);
+    // battery meter on the wall above the battery
+    P(bx(-2.97,-2.55,1.6,1.9,2.42,2.48),0x2a2b2e);P(bx(-2.93,-2.59,1.73,1.8,2.415,2.42),0x101010);
+    // trash can
+    P(new THREE.CylinderGeometry(.15,.13,.42,12).translate(1.11,.66,-2.27),0x6a6e72,(x,y)=>y>.82?1.15:1);P(new THREE.CylinderGeometry(.16,.16,.03,12).translate(1.11,.88,-2.27),0x55595d);
+    P(bx(1.07,1.15,.9,.93,-2.29,-2.25),0x3a3d40);
+    // wash basin on the counter
+    P(new THREE.CylinderGeometry(.21,.16,.13,16).translate(.66,1.425,-2.22),0xa8acb0);P(new THREE.TorusGeometry(.205,.012,4,18).rotateX(Math.PI/2).translate(.66,1.49,-2.22),0x9a9ea2);
+    // shed behind the cabin
+    const SW=0x7a6a58;
+    [bx(-3.62,-1.58,0,2.0,-7.65,-7.55),bx(-3.62,-3.52,0,2.1,-7.65,-5.55),bx(-1.68,-1.58,0,2.1,-7.65,-5.55),bx(-3.62,-3.0,0,2.25,-5.65,-5.55),bx(-2.2,-1.58,0,2.25,-5.65,-5.55),bx(-3.0,-2.2,2.0,2.25,-5.65,-5.55)]
+      .forEach(g=>P(g,SW,(x,y,z)=>.85+.25*hash(Math.floor(x*5)+Math.floor(z*5),3)));
+    P(new THREE.BoxGeometry(2.4,.08,2.5).rotateX(-.1).translate(-2.6,2.18,-6.6),0x4a4038);P(bx(-3.58,-1.62,0,.04,-7.6,-5.6),0x5a4a3a);
+    P(bx(-3.5,-2.75,.75,.8,-7.52,-7.0),0x6a5a48);P(bx(-3.48,-3.42,0,.75,-7.5,-7.44),0x5a4a3a);P(bx(-2.81,-2.75,0,.75,-7.5,-7.44),0x5a4a3a);
+    P(new THREE.CylinderGeometry(.22,.25,.5,8).translate(-1.95,.25,-7.25),0x9a8a62);P(new THREE.CylinderGeometry(.2,.24,.42,8).translate(-2.3,.21,-7.3),0x8a7a58);
+    const mesh=new THREE.Mesh(part(L),mat);G.add(mesh);
+    // shed door, padlock, axe
+    const dg=new THREE.Group();dg.position.set(-3.0,0,-5.6);G.add(dg);Shed.door=dg;
+    dg.add(new THREE.Mesh(part([[bx(0,.8,.03,2.0,-.03,.03),0x6e5e4c,(x)=>.85+.25*hash(Math.floor(x*6),9)],[bx(.05,.75,.5,.6,.03,.06),0x5a4a3a],[bx(.05,.75,1.5,1.6,.03,.06),0x5a4a3a]]),mat));
+    Shed.lock=new THREE.Mesh(part([[bx(-.03,.03,-.05,.02,-.015,.015),0x8a8d92],[new THREE.TorusGeometry(.022,.006,4,8,Math.PI).translate(0,.02,0),0x9a9da2]]),mat);G.add(Shed.lock);
+    const ax=new THREE.Group();ax.add(new THREE.Mesh(part([[new THREE.CylinderGeometry(.018,.022,.75,6),0x9a7a52],[bx(-.02,.02,.3,.42,-.11,.04),0x8a8d92]]),mat));ax.position.set(-2.3,1.25,-7.47);ax.rotation.set(Math.PI/2,0,.4);G.add(ax);Shed.axe=ax;
+    Shed.pose();
+    // dynamic pieces
+    this.meterBar=new THREE.Mesh(new THREE.PlaneGeometry(.32,.05).translate(.16,0,0).rotateY(Math.PI),new THREE.MeshBasicMaterial({color:0x4ad66d}));this.meterBar.position.set(-2.59,1.765,2.412);G.add(this.meterBar);
+    this.basinWater=new THREE.Mesh(new THREE.CircleGeometry(.19,16).rotateX(-Math.PI/2),new THREE.MeshLambertMaterial({color:0x5c7f90}));this.basinWater.position.set(.66,1.47,-2.22);G.add(this.basinWater);
+    const bot=new THREE.Mesh(new THREE.CircleGeometry(.19,16).rotateX(-Math.PI/2),new THREE.MeshLambertMaterial({color:0x6a6e72}));bot.position.set(.66,1.493,-2.22);G.add(bot);this.basinBottom=bot;
+    this.boxes.push([-5.95,-5.25,.25,.95],[.95,1.27,-2.43,-2.1],[-3.62,-1.58,-7.65,-7.52],[-3.62,-3.5,-7.65,-5.55],[-1.7,-1.58,-7.65,-5.55],[-3.62,-3.0,-5.68,-5.52],[-2.2,-1.58,-5.68,-5.52],[-3.5,-2.75,-7.55,-6.98]);
+    // held extras on the camera
+    const hm=c=>new THREE.MeshLambertMaterial({color:c,depthTest:false,depthWrite:false});
+    const meat=new THREE.Group();meat.add(new THREE.Mesh(new THREE.IcosahedronGeometry(.07,0).scale(1.4,.8,1),hm(0x9a2a2a)),new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.12,5).rotateZ(1.2).translate(.08,.02,0),hm(0xe6dccb)));
+    meat.position.set(.2,-.22,-.45);meat.traverse(o=>o.renderOrder=30);camera.add(meat);this.heldMeat=meat;
+    const bk=new THREE.Group();bk.add(new THREE.Mesh(new THREE.CylinderGeometry(.11,.09,.2,12,1,true),Object.assign(hm(0x8a8f96),{side:THREE.DoubleSide})));
+    this.heldBucketW=new THREE.Mesh(new THREE.CircleGeometry(.1,12).rotateX(-Math.PI/2).translate(0,.05,0),hm(0x5c7f90));bk.add(this.heldBucketW);bk.position.set(.24,-.32,-.5);bk.rotation.x=.3;bk.traverse(o=>o.renderOrder=30);camera.add(bk);this.heldBucket=bk;
+    const ha=new THREE.Group();ha.add(new THREE.Mesh(new THREE.CylinderGeometry(.014,.018,.55,6),hm(0x9a7a52)),new THREE.Mesh(new THREE.BoxGeometry(.03,.09,.14).translate(0,.24,-.06),hm(0x8a8d92)));
+    ha.position.set(.26,-.28,-.42);ha.rotation.set(.5,0,-.2);ha.traverse(o=>o.renderOrder=30);camera.add(ha);this.heldAxe=ha;
+    this.addInteractions4();
+  },
+  addInteractions4(){const W=this.W,SX=this.SX,SZ=this.SZ,nm=()=>this.bowlFood?this.bowlFood.name:'';
+    INT.push({p:W(SX+.25,1.4,SZ+.18),r:.22,inCab:1,label:()=>{const h=SV.held;
+        if(h&&h.type==='bowl')return this.lit?'Set the bowl on the wood burner':{hint:'Light the wood burner first'};
+        if(this.bowl!=='stove')return null;
+        if(this.bowlFood){if(this.heat<1)return {hint:(this.bowlFood.meat?'The '+nm()+' is cooking':'The '+nm()+' is warming up')+' ('+Math.round(this.heat*100)+'%)'};return 'Eat the '+nm();}
+        if(this.dirty&&!h)return 'Pick up the dirty bowl';return null;},
+      act:()=>{const h=SV.held;if(h&&h.type==='bowl'){SV.held=null;this.bowl='stove';this.heat=0;Sound.clink();return;}
+        if(this.bowl==='stove'&&this.bowlFood&&this.heat>=1){const f=this.bowlFood;SV.eat(f);this.bowlFood=null;this.dirty=true;this.heat=0;return;}
+        if(this.bowl==='stove'&&this.dirty&&!h){SV.held={type:'dirty'};this.bowl='held';Sound.clink();}}});
+    INT.push({p:W(.15,1.41,-2.2),r:.17,inCab:1,label:()=>{if(this.bowl!=='counter')return null;const h=SV.held;if(this.opening)return {hint:'Opening the can...'};
+        if(h&&h.type==='can'&&!h.opened)return 'Open the '+FOODS[h.i][0]+' with the can opener';
+        if(h&&h.type==='can'&&h.opened)return this.bowlFood?{hint:'The bowl already has food in it'}:'Pour the '+FOODS[h.i][0]+' into the metal bowl';
+        if(h&&h.type==='meat')return this.bowlFood?{hint:'The bowl already has food in it'}:'Put the '+(h.kind)+' in the metal bowl';
+        if(!h&&this.bowlFood)return 'Pick up the bowl of '+nm();return {hint:'A clean metal bowl'};},
+      act:()=>{const h=SV.held;if(h&&h.type==='can'&&!h.opened){this.openCan();return;}
+        if(h&&h.type==='can'&&h.opened&&!this.bowlFood){this.bowlFood=Meal.ofCan(h.i);SV.held={type:'empty',i:h.i};Sound.pour();SV.say('Now put the empty can in the trash.',2400);return;}
+        if(h&&h.type==='meat'&&!this.bowlFood){this.bowlFood=Meal.meat(h.kind);SV.held=null;Sound.clink();return;}
+        if(!h&&this.bowlFood){SV.held={type:'bowl'};this.bowl='held';Sound.clink();}}});
+    INT.push({p:W(.66,1.45,-2.22),r:.22,inCab:1,label:()=>{const h=SV.held;
+        if(h&&h.type==='dirty')return this.basin>0?'Wash the bowl in the basin':{hint:'The wash basin is empty. Bring a bucket of water from the pump.'};
+        if(h&&h.type==='bucket')return h.fill>.3?'Pour the water into the wash basin':{hint:'The bucket is empty'};
+        return {hint:this.basin>0?'Wash basin ('+this.basin+' wash'+(this.basin>1?'es':'')+' of water left)':'Wash basin (empty)'};},
+      act:()=>{const h=SV.held;if(h&&h.type==='dirty'&&this.basin>0){this.basin--;this.dirty=false;this.bowl='counter';SV.held=null;Sound.pour();SV.say('The bowl is clean and back on the counter.',2200);return;}
+        if(h&&h.type==='bucket'&&h.fill>.3){this.basin=3;h.fill=0;Sound.pour();SV.say('The basin is full. Take the empty bucket back to the pump.',2800);}}});
+    INT.push({p:W(1.11,.92,-2.27),r:.2,inCab:1,label:()=>SV.held&&SV.held.type==='empty'?'Throw the empty can in the trash':{hint:'Trash can'+(this.trash?' ('+this.trash+' can'+(this.trash>1?'s':'')+')':'')},
+      act:()=>{if(SV.held&&SV.held.type==='empty'){SV.held=null;this.trash++;Sound.clink();}}});
+    INT.push({p:W(-2.75,1.76,2.42),r:.2,inCab:1,label:()=>({hint:'Radio battery '+Math.round(Radio.batt/2.5*100)+'% · about '+fmtHM(Radio.batt)+' of radio time. The roof panel charges it in daylight.'})});
+    FOODS.forEach((f,i)=>{const c=this.canP[i];INT.push({p:W(c[0],c[1]+.056,c[2]),r:.065,inCab:1,label:()=>{
+        if(!this.canOn[i])return null;const h=SV.held;if(!h)return 'Take the can of '+f[0];if(h.type==='can'&&!h.opened)return 'Swap for the '+f[0];return null;},
+      act:()=>{const h=SV.held;if(h&&h.type==='can')this.canOn[h.i]=true;this.canOn[i]=false;SV.held={type:'can',i,opened:false};Sound.clink();}});});
+    INT.push({p:W(-2.6,1.1,-5.6),r:.6,label:()=>Shed.broken?null:{hint:'The shed is padlocked. The lock is frozen to the hasp.'}});
+    INT.push({p:W(-2.3,1.25,-7.4),r:.35,off:()=>!Shed.broken||SV.axe||!Shed.inside(),label:()=>SV.held?{hint:'Your hands are full'}:'Take the axe',
+      act:()=>{SV.axe=true;Shed.axe.visible=false;Sound.thunk();SV.say('An axe. Now you can hunt a deer or a duck for meat.',3200);}});
+    // pump with a carryable bucket
+    INT.push({p:W(1.4,1.05,-4.4),r:.32,label:()=>{const h=SV.held;if(h&&h.type==='bucket')return 'Set the bucket under the spout';
+        if(ICE.uIce.value>.5)return {hint:'The pump is frozen solid'};if(!Pump.at)return {hint:'The bucket is missing. You left it somewhere.'};
+        if(Pump.fill>=1)return 'Drink from the bucket';return 'Pump water into the bucket';},
+      act:()=>{const h=SV.held;if(h&&h.type==='bucket'){Pump.at=true;Pump.fill=h.fill;SV.held=null;Sound.clink();return;}
+        if(!Pump.at||ICE.uIce.value>.5)return;if(Pump.fill>=1){Pump.fill=0;Sound.noise(.4,500,.6,.15,'lowpass');SV.say('Ice-cold well water. You feel more awake.',2600);stamina=100;return;}
+        Pump.anim=1.2;Pump.fill=Math.min(1,Pump.fill+.34);Sound.noise(.5,600,1,.18);setTimeout(()=>Sound.noise(.7,900,.5,.15,'lowpass'),300);}});
+    INT.push({p:W(1.72,.3,-4.4),r:.22,off:()=>!Pump.at,label:()=>SV.held?null:(Pump.fill>=1?'Pick up the bucket of water':Pump.fill>0?'Pick up the bucket (partly full)':'Pick up the empty bucket'),
+      act:()=>{SV.held={type:'bucket',fill:Pump.fill};Pump.at=false;Pump.fill=0;Sound.clink();}});
+  }
+});
+Object.assign(Pump,{at:true});
+/* ---------- survival controller: days, hunger, battery, alerts ---------- */
+Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,campGone:false,nightDone:0,paused:false,running:false,shedSeen:false,
+  g2(){return ((this.gt-16)%24+24)%24+16;},
+  eat(f){this.full=100;this.starveT=0;this.ate=true;this.eatenName=this.eatenName||f.name;if(f.meat)this.ateMeat=true;this.cold=Math.max(0,this.cold-.5);Sound.eat();
+    this.say(f.meat?'Hot '+f.name+'. You feel strong again.':'Hot food. Warmth spreads through you.',3000);this.hungerWarned=0;},
+  seenAlert(){this.say('It has seen you. RUN!',2600);Hunt.dread=1;Hunt.static=Math.max(Hunt.static,.8);},
+  reset(){Object.assign(this,{dead:false,won:false,gt:16,wood:0,woodTotal:0,matches:false,held:null,ate:false,found:false,everLit:false,eatenName:'',expo:0,cold:0,vy:0,said:{},warnedLow:false,lastHud:'',lastPrompt:'',
+      day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,campGone:false,nightDone:-1,paused:false,shedSeen:false,hungerWarned:0});
+    this.seat=null;Radio.close();Radio.power=false;Radio.want=false;Radio.batt=2.5;Pump.fill=0;Pump.at=true;
+    Cabin.reset();Cabin.dirty=false;Cabin.basin=0;Cabin.trash=0;Cabin.bowlFood=null;Wood.reset();Smoke.reset();Shed.reset();Hunting.reset();this.setLantern(false,true);setFast(false);ICE.uIce.value=0;ICE.uFront.value=400;
+    if(Hunt.state!=='dormant')Hunt.despawn();Hunt.static=0;Hunt.dread=0;stamina=100;$('frostfx').style.opacity=0;},
+  tick(dt){const g=this.g2(),storm=g>=26&&g<30;const rate=(storm?1/67.5:1/135)*(fast?8:1);this.dgt=0;
+    if(this.on&&!this.dead&&!this.paused){this.dgt=dt*rate;this.gt+=this.dgt;}tod=(this.gt%24)/24;},
+  die(title){if(this.dead)return;this.dead=true;Radio.close();this.seat=null;Sound.stinger();
+    setTimeout(()=>this.showEnd(title,'Day '+this.day+', '+fmtClock(this.gt)+'. Click or press any key to start again.',[],'Start again',()=>this.restart()),1300);},
+  dawn(){this.paused=true;this.nightDone=Math.floor((this.gt-16)/24);const n=Cabin.candles.filter(Boolean).length,d=this.day;
+    const items=d===1?[[this.found,'Found the cabin'],[this.woodTotal>=8,'Gathered firewood ('+this.woodTotal+')'],[this.everLit,'Lit the wood burner'],[n===4,'Lit the candles ('+n+'/4)'],[this.ate,this.ate?'Ate a hot bowl of '+this.eatenName:'Went to bed hungry']]
+      :[[true,'Survived night '+d],[this.axe,'Found the axe'],[this.hunted,'Hunted for meat'],[this.ateMeat,'Ate a cooked meal']];
+    this.showEnd(d===1?'You made it to dawn.':'Night '+d+' survived.',d===1?'Level 2 unlocked. The gale is gone and the whole valley is frozen in glass.':'Level '+(d+1)+' unlocked. Another morning in the frozen valley.',items,'Begin day '+(d+1),()=>{
+      $('endcard').hidden=true;$('endcard').classList.remove('show');document.body.classList.remove('hidden-ui');this.paused=false;this.day++;Wood.reset();this.lastHud='';
+      if(this.day===2){Shed.broken=true;Shed.pose();setTimeout(()=>this.say('Day 2. You notice the frost has burst the lock on the shed out back.',5500),600);}
+      else setTimeout(()=>this.say('Day '+this.day+'. Fresh firewood has blown down around the valley.',4000),600);});},
+  events(g,sh){const E=[[18.25,'The sun is going down. Press L to light your lantern.'],[22,'10:00 pm. Four hours until the gale.'],[24,'Midnight. Two hours until the gale.'],
+      [25,'1:00 am. The wind is rising off the peaks.'],[25.5,'Snow is tearing off the mountaintops. Get inside!'],
+      [26,sh?'2:00 am. The gale is here. Stay by the fire.':'2:00 am. The gale is here. Get inside now!'],[26.25,'The forest is freezing solid.'],[29,'5:00 am. One more hour until dawn.'],[34,'The ice is starting to melt.']];
+    for(const [t,m] of E){const k=this.day+':'+t;if(g>=t&&!this.said[k]){this.said[k]=1;if(g-t<.25&&!(this.day===1&&t===34))this.say(m,4500);}}},
+  update(dt){
+    const g=this.g2(),s=smooth,act=this.on,cp=camera.position;Cabin.updateInside(cp);
+    if(act){this.sky=s(25.55,26.05,g)*(1-s(29.6,30,g));this.gale=s(26,26.12,g)*(1-s(29.7,30,g));this.peaks=s(25.45,25.95,g)*(1-s(29.8,30.1,g));
+      ICE.uIce.value=s(26.18,26.3,g)*(1-s(33,36,g));ICE.uFront.value=175-189*s(26.2,27,g);this.rigid=s(26.5,27,g)*(1-s(32.5,33.5,g));
+      if(g>=26.1)this.campGone=true;this.campOut=this.campGone?1:s(26.02,26.1,g);if(water)water.material.uniforms.uFrz.value=s(26.8,27.05,g)*(1-s(33.5,35,g));}
+    else{this.sky=this.gale=this.peaks=this.rigid=this.campOut=0;ICE.uIce.value=0;ICE.uFront.value=400;if(water)water.material.uniforms.uFrz.value=0;}
+    const sheltered=Cabin.inside&&!Cabin.door;this.stormVis=this.sky;
+    this.fog=this.gale*(Cabin.inside?.6:1);this.fogFar=Cabin.inside?60:34;this.shake=this.gale*(Cabin.inside?.1:1);this.galeSnd=this.gale;
+    if(Cabin.lit&&this.dgt>0){Cabin.fuel-=this.dgt;if(Cabin.fuel<=0){Cabin.fuel=0;Cabin.lit=false;this.say(g>=26&&g<30?'The wood burner has gone out! Load a log and relight it.':'The wood burner has burned out.',4000);}
+      else if(Cabin.fuel<.3&&!this.warnedLow){this.warnedLow=true;this.say('The wood burner is burning low. Add a log.',3200);}}
+    if(Cabin.fuel>=.3)this.warnedLow=false;
+    // radio battery: 2.5 hours of radio time, the roof panel charges it in daylight
+    if(this.dgt>0){if(Radio.power){Radio.batt-=this.dgt;if(Radio.batt<=0){Radio.batt=0;Radio.power=false;Radio.close();this.say('The radio battery is flat. The solar panel will charge it in daylight.',4000);}}
+      if(dayAmt>.4&&this.gale<.1)Radio.batt=Math.min(2.5,Radio.batt+this.dgt*.7);}
+    if(Radio.want&&!Radio.power&&Cabin.cableT>=1&&Radio.batt>.05)Radio.power=true;
+    if(this.on&&!this.dead&&!this.paused){
+      // hunger: eat every 3 hours
+      if(this.dgt>0){this.full=Math.max(0,this.full-this.dgt*100/3);
+        if(this.full<35&&this.hungerWarned<1){this.hungerWarned=1;this.say('You are getting hungry. Find something to eat.',3500);}
+        if(this.full<=0){if(this.hungerWarned<2){this.hungerWarned=2;this.say('You are starving. Eat something soon or you will not make it.',4500);}this.starveT+=this.dgt;stamina=Math.min(stamina,30);}}
+      if(this.gale>.35&&!sheltered)this.expo+=dt*(Cabin.inside?.08:.2)*this.gale;else this.expo=Math.max(0,this.expo-dt*.3);
+      if(this.gale>.5&&sheltered&&!Cabin.lit)this.cold+=dt/55;else this.cold=Math.max(0,this.cold-dt*(Cabin.lit?.12:.02));
+      if(this.expo>=1)this.die('The gale took you.');else if(this.cold>=1)this.die('The cold found you.');else if(this.starveT>=1.5)this.die('Hunger took you.');
+      else if(g>=30&&g<31&&this.nightDone!==Math.floor((this.gt-16)/24))this.dawn();
+      this.events(g,sheltered);
+      if(!this.found&&cp.distanceTo(Cabin.doorW)<14){this.found=true;this.say('You found the cabin.',2600);}
+      if(Shed.broken&&!this.shedSeen&&Shed.inside()){this.shedSeen=true;}
+      if(this.gale>.3&&!Cabin.inside&&(this.howl-=dt)<0){this.howl=1.5+Math.random()*2.5;if(Sound.on){const t=Sound.ctx.currentTime,f=420+Math.random()*380;Sound.tone(f,f*(.7+Math.random()*.5),t,2.2,.035*this.gale,'sine');}}
+    }
+    $('frostfx').style.opacity=Math.min(1,Math.max(this.expo,this.cold*.9,this.dead?1:0)).toFixed(3);
+    Cabin.update(dt);Cabin.update4(dt);Smoke.update(dt);Storm.update();Wood.update();Radio.update(dt);Pump.update(dt);Music.update();
+    {const f=camera.fov+(this.zoomT-camera.fov)*Math.min(1,dt*10);if(Math.abs(f-camera.fov)>.01){camera.fov=f;camera.updateProjectionMatrix();}}
+    $('waterfx').style.opacity=this.swim?1:0;$('seen').hidden=!(Hunt.state==='hunt'&&!Hunt.caught);
+    if(this.campOut>0){fire.light.intensity*=1-this.campOut;const v=this.campOut<.6;fire.flames.forEach(f=>f.visible=v);fire.glow.visible=v;fire.embers.visible=v;}
+    else if(!fire.glow.visible){fire.flames.forEach(f=>f.visible=true);fire.glow.visible=true;fire.embers.visible=true;}
+    const can=(this.on&&!this.dead&&!this.paused)||(!this.on&&mode==='explore'&&$('intro').hidden&&$('endcard').hidden);
+    Interact.cur=can&&!Cabin.opening?Interact.find():null;const c=Interact.cur;
+    const ps=c?(typeof c.lb==='string'?'<kbd>E</kbd>'+c.lb:c.lb.hint):(this.seat&&!Radio.open?'Press W, A, S or D to stand up':'');
+    if(ps!==this.lastPrompt){this.lastPrompt=ps;const el=$('prompt');el.hidden=!ps;el.innerHTML=ps;el.classList.toggle('hint',(!!c&&typeof c.lb!=='string')||(!c&&!!this.seat));}
+    this.hudT-=dt;if(this.hudT<=0){this.hudT=.25;this.hud(sheltered);}
+    this.compass();
+  },
+  hud(sh){if(!this.on)return;const g=this.g2(),n=Cabin.candles.filter(Boolean).length,d=this.day;
+    const cnt=g<26?'Gale in '+fmtHM(26-g):g<30?'Dawn in '+fmtHM(30-g):'Gale in '+fmtHM(50-g);const warn=g>=25&&g<30;
+    const shelter=g<26||g>=30?[sh,'Be inside with the door shut by 2:00 am']:[false,'Keep the fire going until dawn'];
+    let items;
+    if(d===1)items=[[this.found,this.found?'Found the cabin':'Find the cabin up the mountain to the '+this.dir],[this.woodTotal>=8,'Gather firewood ('+Math.min(this.woodTotal,8)+'/8)'],
+      [this.everLit,'Light the wood burner'],[n===4,'Light the candles ('+n+'/4)'],[this.ate,this.ate?'Ate the '+this.eatenName:'Heat a can of food on the wood burner and eat it'],shelter];
+    else if(d===2)items=[[this.shedSeen||this.axe,'Check the shed behind the cabin'],[this.axe,'Take the axe from the shed'],[this.hunted,'Hunt a deer or a duck'],[this.ateMeat,'Cook the meat on the wood burner and eat it'],shelter];
+    else items=[[this.full>40,'Stay fed (eat every 3 hours)'],[Cabin.fuel>=3||this.wood>=4,'Stock the wood burner for the night'],shelter];
+    const h=this.held,nm={can:h&&h.i!=null?'Can of '+FOODS[h.i][0]+(h.opened?' (open)':''):'',empty:'Empty can',bowl:'Bowl of '+(Cabin.bowlFood?Cabin.bowlFood.name:''),dirty:'Dirty bowl',
+      bucket:h&&h.type==='bucket'?(h.fill>.3?'Bucket of water':'Empty bucket'):'',meat:h&&h.kind?'Raw '+h.kind:''};const hold=h?nm[h.type]:'';
+    const stove=Cabin.lit?'burning, '+fmtHM(Cabin.fuel)+' left':Cabin.fuel>0?'loaded, not lit':'cold';
+    const bar=(v,c)=>`<span class="mbar"><i style="width:${Math.round(v)}%;background:${c}"></i></span>`;
+    const fc=this.full>35?'var(--moss)':this.full>0?'#e0b34a':'#d9473a';
+    const html=`<div class="clockrow"><span class="big">${fmtClock(this.gt)}</span><span class="count${warn?' warn':''}">Day ${d} · ${cnt}</span></div><ol>${items.map(([dd,t])=>`<li class="${dd?'done':''}">${t}</li>`).join('')}</ol>
+      <div class="inv">Food ${bar(this.full,fc)} ${Math.round(this.full)}%${this.full<=0?' <b style="color:#ff8a7a">starving</b>':''}<br>Firewood <b>${this.wood}</b> · Matches <b>${this.matches?'yes':'no'}</b>${this.axe?' · Axe <b>yes</b>':''}<br>Wood burner <b>${stove}</b>${hold?'<br>Holding <b>'+hold+'</b>':''}</div>`;
+    if(html!==this.lastHud){this.lastHud=html;$('obj').innerHTML=html;}}
+});
+Object.assign(Cabin,{
+  update4(dt){if(!this.meterBar)return;const b=Radio.batt/2.5;this.meterBar.scale.x=Math.max(.001,b);this.meterBar.material.color.setHex(b>.5?0x4ad66d:b>.2?0xe0b34a:0xd9473a);
+    this.basinWater.visible=this.basin>0;this.basinWater.position.y=1.43+this.basin*.018;this.basinBottom.visible=this.basin===0;
+    const h=SV.held;this.heldMeat.visible=!!(h&&h.type==='meat');if(h&&h.type==='meat')this.heldMeat.children[0].material.color.setHex(h.kind==='duck'?0xc0675a:0x9a2a2a);
+    this.heldBucket.visible=!!(h&&h.type==='bucket');this.heldBucketW.visible=!!(h&&h.type==='bucket'&&h.fill>.3);
+    this.heldAxe.visible=SV.axe&&!h&&!SV.seat;if(Hunting.swing>0){Hunting.swing-=dt;this.heldAxe.rotation.x=.5-Math.sin((.45-Hunting.swing)/.45*Math.PI)*1.4;}else this.heldAxe.rotation.x=.5;
+    if(Pump.bucket)Pump.bucket.visible=Pump.at;if(!Pump.at)Pump.water.visible=false;
+    if(h&&h.type==='empty'){const u=this.heldCan.userData;u.l.material.color.setHex(FOODS[h.i][1]);u.top.visible=false;u.food.visible=false;}}
+});
+
 /* ---------------- Main loop ---------------- */
 const frustum=new THREE.Frustum(),PM=new THREE.Matrix4();
 let last=performance.now(),acc=0,frames=0,elapsed=0;
@@ -1816,7 +2102,7 @@ function loop(now){
 /* ---------------- Boot ---------------- */
 (async function(){
   const steps=[['Raising the hills',()=>{findCabin();findZone();buildTerrain();}],['Filling the river',buildWater],['Planting the forest',()=>{findCamp();placeTrees();placeGrass();}],
-    ['Growing the meadow',buildInstances],['Something stirs in the Blackwood',()=>{Blackwood.build();Hunt.build();}],['Lighting the campfire',buildCampfire],['Building the cabin',()=>{Cabin.build();Wood.build();Smoke.build();}],['Gathering the storm',()=>Storm.build()],['Waking the animals',()=>{buildFireflies();buildClouds();buildBirds();Animals.build();}]];
+    ['Growing the meadow',buildInstances],['Something stirs in the Blackwood',()=>{Blackwood.build();Hunt.build();}],['Lighting the campfire',buildCampfire],['Building the cabin',()=>{Cabin.build();Wood.build();Smoke.build();}],['Gathering the storm',()=>Storm.build()],['Waking the animals',()=>{buildFireflies();buildClouds();buildBirds();Animals.build();Hunting.init();}]];
   for(const [msg,fn] of steps){loadMsg.textContent=msg;await frame();fn();}
   updateSky();updateTour(0);
   renderer.compile(scene,camera);
