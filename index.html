@@ -116,6 +116,7 @@ button[aria-pressed="true"]{background:rgba(255,148,64,.16);border-color:rgba(25
 body.survive #bTour,body.survive #bExplore,body.survive #tod,body.survive #clock{display:none}
 body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{display:none}
 #waterfx{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0;transition:opacity .6s;background:linear-gradient(to top,rgba(40,90,120,.55),rgba(40,90,120,.12) 45%,rgba(40,90,120,0) 70%)}
+#nukeFlash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:6}
 #reader{position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);padding:16px}
 #reader[hidden]{display:none}
 .rd{width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;background:linear-gradient(#efe4c8,#e2d3ae);color:#2b2216;border-radius:6px;padding:18px 24px;box-shadow:0 14px 50px rgba(0,0,0,.7);border-left:10px solid #6a4a2a}
@@ -196,6 +197,7 @@ body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{di
   <div class="sep"></div>
   <div class="grp">
     <button id="bSound" aria-pressed="false" title="Ambient sound">Sound</button>
+    <button id="bStove" aria-pressed="true" title="Wood burner crackle on or off">Stove</button>
     <button id="bShot" title="Save a screenshot (P)">Photo</button>
     <button id="bFull" title="Fullscreen (F)">Full</button>
     <button id="bHelp" title="Controls (?)">?</button>
@@ -204,6 +206,7 @@ body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{di
 
 <div class="hud" id="stamina" hidden><i id="stamFill"></i></div>
 <div id="toast"></div>
+<div id="nukeFlash"></div>
 <div id="intro" hidden><div class="card">
   <p class="kick">Raspberry Pi 5 / 500 · overclocked edition</p>
   <h2>Fernlight <em>Frostfall</em></h2>
@@ -1277,7 +1280,7 @@ const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[fa
     this.doorW=W(0,1.3,2.65);this.stoveW=W(SX,1.0,SZ+.45);this.smokeW=W(SX,5.25,SZ);this.bowlTopW=W(SX+.25,1.4,SZ+.18);
     this.boxes=[[-3.45,3.45,-2.85,-2.47],[-3.35,-2.97,-2.9,2.9],[2.97,3.35,-2.9,2.9],[-3.45,-.55,2.47,2.85],[.55,3.45,2.47,2.85],
       [SX-.45,SX+.45,SZ-.4,SZ+.4],[-1.64,-.96,-2.5,-1.96],[-.62,.92,-2.52,-1.96],[1.3,2.9,-2.5,-2.1],[.3,1.7,-.12,.72],[1.95,3.0,.6,2.45],[2.96,3.34,4.08,4.34],[-3.34,-2.96,4.08,4.34],[-5.15,-4.45,3.05,3.75]];
-    this.addInteractions();this.build3(W,G,mat);this.build4();this.build5();this.build6();this.reset();
+    this.addInteractions();this.build3(W,G,mat);this.build4();this.build5();this.build6();Nuke.build();this.reset();
   },
   addInteractions(){const W=this.W,SX=this.SX,SZ=this.SZ,F=i=>FOODS[i][0];
     INT.push({p:W(0,1.35,2.65),r:.55,label:()=>this.door?'Close the door':'Open the door',act:()=>{this.door=!this.door;Sound.creak();}});
@@ -2038,7 +2041,7 @@ Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,
       if(this.gale>.3&&!Cabin.inside&&(this.howl-=dt)<0){this.howl=1.5+Math.random()*2.5;if(Sound.on){const t=Sound.ctx.currentTime,f=420+Math.random()*380;Sound.tone(f,f*(.7+Math.random()*.5),t,2.2,.035*this.gale,'sine');}}
     }
     $('frostfx').style.opacity=Math.min(1,Math.max(this.expo,this.cold*.9,this.dead?1:0)).toFixed(3);
-    Cabin.update(dt);Cabin.update4(dt);Cabin.update5();Cabin.update6();Smoke.update(dt);Storm.update();Wood.update();Radio.update(dt);Pump.update(dt);Music.update();
+    Cabin.update(dt);Cabin.update4(dt);Cabin.update5();Cabin.update6();Nuke.update(dt);Smoke.update(dt);Storm.update();Wood.update();Radio.update(dt);Pump.update(dt);Music.update();
     {const f=camera.fov+(this.zoomT-camera.fov)*Math.min(1,dt*10);if(Math.abs(f-camera.fov)>.01){camera.fov=f;camera.updateProjectionMatrix();}}
     $('waterfx').style.opacity=this.swim?1:0;$('seen').hidden=!(Hunt.state==='hunt'&&!Hunt.caught);
     if(this.campOut>0){fire.light.intensity*=1-this.campOut;const v=this.campOut<.6;fire.flames.forEach(f=>f.visible=v);fire.glow.visible=v;fire.embers.visible=v;}
@@ -2225,6 +2228,261 @@ Object.assign(Cabin,{shelfB:false,
   },
   update6(){if(this.shelfBM)this.shelfBM.visible=this.shelfB;}
 });
+
+/* ================= FROSTFALL round 6: stove mute, day 3 air raid, bunker, ground zero ================= */
+/* ---------- wood burner sound toggle ---------- */
+const StoveSnd={on:true};
+try{StoveSnd.on=localStorage.getItem('ff-stove')!=='off';}catch(e){}
+{const b=$('bStove');const sync=()=>b.setAttribute('aria-pressed',StoveSnd.on);sync();
+  b.onclick=()=>{StoveSnd.on=!StoveSnd.on;sync();toast(StoveSnd.on?'Wood burner sound on':'Wood burner sound off',1400);try{localStorage.setItem('ff-stove',StoveSnd.on?'on':'off');}catch(e){}};}
+{const _fd=Cabin.fireDist.bind(Cabin);Cabin.fireDist=function(){return StoveSnd.on?_fd():999;};}
+
+/* ---------- 2m emergency traffic ---------- */
+const ALERT_STATIONS=[
+ {b:3,f:145.110,name:'County emergency repeater · EAS relay',alertSt:true,lines:[
+  '[EAS tones] This is an Emergency Action Notification from the National Warning System.',
+  'NORAD reports multiple intercontinental ballistic missile launches from the Russian Federation, tracking toward North America.',
+  'Estimated arrival in this region is 9:33 am local time. This is not a test.',
+  'Get underground now. A basement, a shelter, a tunnel. Stay away from windows. Do not look toward a flash.',
+  'Stay under cover until officials tell you it is safe. Keep your radio on.']},
+ {b:3,f:146.940,name:'State Patrol dispatch',alertSt:true,lines:[
+  'All units, all units. Civil defense warning red. I repeat, warning red.',
+  'Clear the ramps and get the public off the roads and into any shelter they can find.',
+  'Dispatch is moving to the hardened room. You have your orders. God bless. Out.']},
+ {b:3,f:147.330,name:'Fernlight Valley emergency net',alertSt:true,lines:[
+  'Net control to all stations, this is an emergency net. Three separate sources confirm inbound ICBMs.',
+  'Projected impact 9:30 to 9:35 local. The dam and the valley floor are on the target list.',
+  'All stations, get your families underground. Net control is going off the air. 73, and good luck.']},
+ {b:3,f:145.490,name:'Old Hollis',alertSt:true,hollis:true,lines:[
+  'If anybody is in my old cabin up on the ridge, listen to me. This is Hollis.',
+  'Behind the shed there is a steel box bolted to the back wall. Open it and press the red button.',
+  'I dug a shelter into that mountain in 1962. There is a light, a couch, and a TV wired to the antenna tower.',
+  'Go now. Do not wait for the second siren.']}];
+const DAM_ALERT=[
+  'Anyone on simplex? This is the dam crew. That siren on the peak has not sounded since the sixties.',
+  'Every TV went to the emergency slide, then black. The radio says missiles. Real ones.',
+  'We are going down into the turbine gallery. If you are up on the mountain, find something with a lot of rock over it.'];
+{const _pool=Radio.pool.bind(Radio);Radio.pool=function(){const s=this.cur;if(s&&Nuke.alert){if(s.alertSt)return s.lines;if(s.f===146.52&&s.b===3)return DAM_ALERT;}return _pool();};}
+
+/* ---------- the air raid, the bunker, the blast ---------- */
+const BK={x:-2.6,y:-25,z0:-31,z1:-25,x0:-5.1,x1:-.1};
+const Nuke={alert:false,phase:0,heard:0,lookShed:false,box:0,emerge:0,doorT:0,inside:false,tv:false,blastT:-1,waveR:0,erased:false,overT:-1,deadShown:false,siren2:false,
+  sirens:[],gz:new THREE.Vector3(0,0,0),
+  build(){const G=Cabin.G;const BG=new THREE.Group();BG.position.copy(G.position);BG.rotation.copy(G.rotation);scene.add(BG);this.BG=BG;
+    const W=(x,y,z)=>Cabin.W(x,y,z);this.W=W;
+    this.terrain=scene.children.find(o=>o.isMesh&&o.material&&o.material.map&&o.geometry.attributes.position.count>5000&&o.geometry.index);
+    {let h=-1e9;const rc=new THREE.Raycaster();for(const lx of [-4.2,-3.4,-2.6,-1.8,-1.0])for(const lz of [-15.3,-14.8,-14.3]){const w=W(lx,400,lz);h=Math.max(h,heightAt(w.x,w.z));if(this.terrain){rc.set(w,new THREE.Vector3(0,-1,0));const hit=rc.intersectObject(this.terrain)[0];if(hit)h=Math.max(h,hit.point.y);}}this.sill=h-CAB.y+.08;}
+    const lam=new THREE.MeshLambertMaterial({vertexColors:true});
+    /* steel box on the back wall of the shed */
+    const SBg=new THREE.Group();SBg.position.set(-2.6,1.15,-7.6);BG.add(SBg);
+    SBg.add(new THREE.Mesh(part([[bx(-.2,.2,-.26,.26,-.18,0),0x5f6a62],[bx(-.05,.05,.27,.31,-.03,0),0x3a3a3a],[new THREE.CylinderGeometry(.06,.06,.035,16).rotateX(Math.PI/2).translate(0,0,-.19),0x2a2a2a]]),lam));
+    this.btn=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.05,16).rotateX(Math.PI/2),new THREE.MeshLambertMaterial({color:0xd01818,emissive:0x400000}));this.btn.position.set(0,0,-.21);SBg.add(this.btn);
+    const lidH=new THREE.Group();lidH.position.set(-.2,0,-.24);SBg.add(lidH);
+    lidH.add(new THREE.Mesh(part([[bx(0,.4,-.26,.26,-.03,0),0x6a766d],[bx(.17,.23,-.08,.08,-.045,-.03),0x2e2e2e],[bx(.05,.35,.12,.16,-.032,-.029),0xd8c040]]),lam));this.lid=lidH;
+    /* bunker portal, starts buried in the hillside */
+    const PG=new THREE.Group();BG.add(PG);this.PG=PG;const PI=new THREE.Group();PI.position.set(0,this.sill-1.15,1.0);PG.add(PI);
+    const cc=0x8e8a82,dk=0x1b1c1e;const L=[],P=(g,c)=>L.push([g,c]);
+    P(bx(-5.0,-.2,3.9,4.8,-19.6,-16.2),cc);P(bx(-5.0,-3.9,-1.2,3.9,-19.6,-16.2),cc);P(bx(-1.3,-.2,-1.2,3.9,-19.6,-16.2),cc);P(bx(-3.9,-1.3,-1.2,1.15,-19.6,-16.2),cc);
+    for(let i=0;i<8;i++){const x=-4.9+i*.6;P(bx(x,x+.3,4.25,4.55,-16.21,-16.19),i%2?0x1d1d1d:0xd8b02a);}
+    P(bx(-3.9,-1.3,1.15,3.9,-19.6,-19.4),dk);P(bx(-3.9,-3.88,1.15,3.9,-19.4,-16.2),0x2a2b2d);P(bx(-1.32,-1.3,1.15,3.9,-19.4,-16.2),0x2a2b2d);
+    P(bx(-3.9,-1.3,3.88,3.9,-19.4,-16.2),0x232426);P(bx(-3.9,-1.3,1.15,1.17,-19.4,-16.2),0x343434);
+    for(let i=0;i<5;i++)P(bx(-3.7,-1.5,1.17,1.19,-19.3+i*.5,-19.1+i*.5),0x494949);
+    {const len=Math.hypot(4.2,1.6),ang=Math.atan2(1.6,4.2);const rg=new THREE.BoxGeometry(2.8,.6,len).rotateX(ang).translate(-2.6,1.15-.8-.3,-(16.2+12.0)/2);P(rg,0x86827a);}
+    PI.add(new THREE.Mesh(part(L),lam));
+    {const c=document.createElement('canvas');c.width=256;c.height=272;const x=c.getContext('2d');x.fillStyle='#0b0b0c';x.fillRect(0,0,256,272);
+      const gr=x.createRadialGradient(128,70,4,128,110,170);gr.addColorStop(0,'rgba(255,214,150,.55)');gr.addColorStop(.25,'rgba(120,100,80,.25)');gr.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=gr;x.fillRect(0,0,256,272);
+      x.strokeStyle='rgba(150,145,135,.35)';x.lineWidth=2;const q=(s)=>{const w=256*s,h=272*s;x.strokeRect(128-w/2,136-h/2+ (1-s)*30,w,h);};[.9,.66,.48,.34].forEach(q);
+      for(let i=0;i<7;i++){const y=272-i*14,w=230-i*22;x.fillStyle=`rgba(${90-i*8},${88-i*8},${84-i*8},1)`;x.fillRect(128-w/2,y-8,w,7);}
+      x.fillStyle='#ffe2a0';x.beginPath();x.arc(128,62,5,0,6.3);x.fill();
+      const hole=new THREE.Mesh(new THREE.PlaneGeometry(2.6,2.75),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),fog:false}));hole.position.set(-2.6,2.525,-16.56);PI.add(hole);}
+    const beacon=new THREE.Mesh(new THREE.SphereGeometry(.16,10,8),new THREE.MeshBasicMaterial({color:0xff2a1a}));beacon.position.set(-2.6,4.95,-16.6);PI.add(beacon);this.beacon=beacon;
+    const steel=new THREE.MeshLambertMaterial({vertexColors:true});
+    const leaf=s=>{const g=new THREE.Group(),LL=[];const x0=s<0?-3.9:-2.6,x1=s<0?-2.6:-1.3;LL.push([bx(x0,x1,1.15,3.9,-16.5,-16.25),0x5a6066]);
+      for(let i=0;i<4;i++)LL.push([bx(x0+.06,x1-.06,1.35+i*.68,1.42+i*.68,-16.26,-16.22),0x4a4f55]);LL.push([bx(s<0?x1-.12:x0+.04,s<0?x1-.04:x0+.12,2.2,2.8,-16.24,-16.18),0x2e3134]);
+      g.add(new THREE.Mesh(part(LL),steel));PI.add(g);return g;};
+    this.leafL=leaf(-1);this.leafR=leaf(1);
+    /* the room under the mountain, lit by one bulb (baked into vertex colours) */
+    const RL=[],R=(g,c)=>RL.push([g,c]);const sb=(x0,x1,y0,y1,z0,z1,s)=>new THREE.BoxGeometry(x1-x0,y1-y0,z1-z0,s[0],s[1],s[2]).translate((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);
+    const Y=BK.y,cw=0x8d8a84;
+    R(sb(BK.x0,BK.x1,Y-.2,Y,BK.z0,BK.z1,[10,1,12]),0x6e6a62);R(sb(BK.x0,BK.x1,Y+2.6,Y+2.8,BK.z0,BK.z1,[10,1,12]),cw);
+    R(sb(BK.x0-.2,BK.x0,Y,Y+2.6,BK.z0,BK.z1,[1,6,12]),cw);R(sb(BK.x1,BK.x1+.2,Y,Y+2.6,BK.z0,BK.z1,[1,6,12]),cw);
+    R(sb(BK.x0,BK.x1,Y,Y+2.6,BK.z0-.2,BK.z0,[10,6,1]),cw);R(sb(BK.x0,BK.x1,Y,Y+2.6,BK.z1,BK.z1+.2,[10,6,1]),cw);
+    R(sb(-3.3,-1.9,Y,Y+2.2,BK.z1-.08,BK.z1,[3,5,1]),0x5a6066);R(sb(-2.1,-1.98,Y+1,Y+1.3,BK.z1-.13,BK.z1-.08,[1,1,1]),0x2e3134);
+    R(sb(-3.75,-1.45,Y,Y+.45,-27.65,-26.85,[5,1,2]),0x5a3b2a);R(sb(-3.75,-1.45,Y+.45,Y+1.05,-26.95,-26.75,[5,2,1]),0x6b4632);
+    R(sb(-3.85,-3.65,Y,Y+.7,-27.65,-26.75,[1,2,2]),0x5a3b2a);R(sb(-1.55,-1.35,Y,Y+.7,-27.65,-26.75,[1,2,2]),0x5a3b2a);
+    R(sb(-3.6,-1.6,Y+.45,Y+.6,-27.6,-26.95,[4,1,2]),0x7a5240);
+    R(sb(-3.55,-1.65,Y+1.0,Y+2.1,-30.98,-30.9,[4,3,1]),0x151515);
+    R(sb(-2.9,-2.4,Y,Y+.25,-30.85,-30.55,[2,1,1]),0x1f2a22);R(sb(-2.85,-2.8,Y+.25,Y+.29,-30.8,-30.75,[1,1,1]),0xb8322a);R(sb(-2.5,-2.45,Y+.25,Y+.29,-30.8,-30.75,[1,1,1]),0x1a1a1a);
+    R(sb(-2.66,-2.62,Y+.27,Y+1.05,-30.92,-30.88,[1,3,1]),0x111111);
+    R(sb(-4.95,-4.3,Y,Y+1.8,-30.9,-30.4,[2,4,1]),0x4f5a50);for(let i=0;i<4;i++)R(sb(-4.92,-4.33,Y+.3+i*.42,Y+.33+i*.42,-30.9,-30.38,[1,1,1]),0x3a443c);
+    for(let i=0;i<9;i++){const x=-4.85+(i%3)*.17,yy=Y+.34+Math.floor(i/3)*.42;R(sb(x,x+.13,yy,yy+.2,-30.75,-30.6,[1,1,1]),[0x9a3a2a,0x5a6a2a,0x2a4a7a][i%3]);}
+    R(sb(-.75,-.2,Y,Y+.9,-30.9,-30.2,[2,3,2]),0x6a6e72);
+    const geo=part(RL),pos=geo.attributes.position,col=geo.attributes.color,LP=new THREE.Vector3(-2.6,Y+2.45,-28.2),v=new THREE.Vector3();
+    for(let i=0;i<pos.count;i++){v.fromBufferAttribute(pos,i);const d=v.distanceTo(LP),down=clamp((LP.y-v.y)/Math.max(d,.01),0,1);const k=.13+1.9/(1+d*d*.3)*(.5+.5*down);col.setXYZ(i,col.getX(i)*k,col.getY(i)*k,col.getZ(i)*k);}
+    col.needsUpdate=true;this.roomMat=new THREE.MeshBasicMaterial({vertexColors:true,fog:false});const room=new THREE.Mesh(geo,this.roomMat);BG.add(room);this.room=room;
+    this.bulb=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),new THREE.MeshBasicMaterial({color:0xfff0c0,fog:false}));this.bulb.position.copy(LP);BG.add(this.bulb);
+    const cord=new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.28,4),new THREE.MeshBasicMaterial({color:0x111111,fog:false}));cord.position.set(LP.x,LP.y+.17,LP.z);BG.add(cord);
+    this.cone=new THREE.Mesh(new THREE.ConeGeometry(1.5,2.4,20,1,true).translate(0,-1.2,0),new THREE.MeshBasicMaterial({color:0xffd890,transparent:true,opacity:.05,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,side:THREE.DoubleSide}));
+    this.cone.position.copy(LP);BG.add(this.cone);
+    room.visible=this.bulb.visible=cord.visible=this.cone.visible=false;this.roomParts=[room,this.bulb,cord,this.cone];
+    /* the TV and its antenna feed */
+    this.rt=new THREE.WebGLRenderTarget(384,216);
+    this.tvMat=new THREE.MeshBasicMaterial({map:this.rt.texture,fog:false});
+    const tv=new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.02),this.tvMat);tv.position.set(-2.6,Y+1.55,-30.88);BG.add(tv);this.tvScr=tv;
+    const oc=document.createElement('canvas');oc.width=384;oc.height=216;this.oc=oc;this.ox=oc.getContext('2d');this.otex=new THREE.CanvasTexture(oc);
+    const ov=new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.02),new THREE.MeshBasicMaterial({map:this.otex,transparent:true,fog:false,depthWrite:false}));ov.position.set(-2.6,Y+1.55,-30.875);BG.add(ov);this.tvOv=ov;
+    tv.visible=ov.visible=false;
+    this.feedCam=new THREE.PerspectiveCamera(74,16/9,.5,4000);
+    /* siren on the adjacent peak */
+    let best=null;for(let a=0;a<48;a++)for(let r=60;r<170;r+=8){const x=CAB.x+Math.cos(a/48*6.283)*r,z=CAB.z+Math.sin(a/48*6.283)*r,h=heightAt(x,z);if(!best||h>best[2])best=[x,z,h];}
+    const sp=new THREE.Group();sp.position.set(best[0],best[2]-.5,best[1]);scene.add(sp);this.sirenPos=sp.position;
+    sp.add(new THREE.Mesh(part([[new THREE.CylinderGeometry(.25,.35,10,8).translate(0,5,0),0x6a6a66],[bx(-1.4,1.4,9.6,10.6,-1.4,1.4),0x7a7a74],[new THREE.CylinderGeometry(.9,.5,1.6,10).rotateZ(Math.PI/2).translate(1.6,10.1,0),0x8a8a84],[new THREE.CylinderGeometry(.9,.5,1.6,10).rotateZ(-Math.PI/2).translate(-1.6,10.1,0),0x8a8a84]]),addIce(new THREE.MeshLambertMaterial({vertexColors:true}))));
+    this.sirenLight=new THREE.Sprite(new THREE.SpriteMaterial({color:0xff2a1a,fog:false,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));this.sirenLight.scale.set(5,5,1);this.sirenLight.position.set(0,11.6,0);sp.add(this.sirenLight);
+    /* the blast */
+    const bm=c=>new THREE.MeshBasicMaterial({color:c,fog:false,transparent:true,depthWrite:false});
+    const BL=new THREE.Group();BL.position.copy(this.gz);scene.add(BL);BL.visible=false;this.BL=BL;
+    this.fireball=new THREE.Mesh(new THREE.SphereGeometry(1,28,18),bm(0xffffff));BL.add(this.fireball);
+    const capG=new THREE.SphereGeometry(1,28,16);{const p=capG.attributes.position,c=new Float32Array(p.count*3);for(let i=0;i<p.count;i++){const y=p.getY(i),k=smooth(.25,-.7,y);c[i*3]=.42+.58*k;c[i*3+1]=.36+.22*k;c[i*3+2]=.32-.12*k;}capG.setAttribute('color',new THREE.BufferAttribute(c,3));}
+    this.cap=new THREE.Mesh(capG,new THREE.MeshBasicMaterial({vertexColors:true,fog:false,transparent:true,depthWrite:false}));BL.add(this.cap);
+    const stG=new THREE.CylinderGeometry(1,1.5,1,20,6,true).translate(0,.5,0);{const p=stG.attributes.position,c=new Float32Array(p.count*3);for(let i=0;i<p.count;i++){const y=p.getY(i),k=1-y;c[i*3]=.45+.5*k;c[i*3+1]=.38+.15*k;c[i*3+2]=.32;}stG.setAttribute('color',new THREE.BufferAttribute(c,3));}
+    this.stem=new THREE.Mesh(stG,new THREE.MeshBasicMaterial({vertexColors:true,fog:false,transparent:true,depthWrite:false}));BL.add(this.stem);
+    this.skirt=new THREE.Mesh(new THREE.CylinderGeometry(1,1,1,40,1,true).translate(0,.5,0),Object.assign(bm(0x8a7a66),{side:THREE.DoubleSide}));BL.add(this.skirt);
+    this.wilson=new THREE.Mesh(new THREE.SphereGeometry(1,28,14,0,Math.PI*2,0,Math.PI/2),Object.assign(bm(0xffffff),{side:THREE.DoubleSide}));BL.add(this.wilson);
+    this.flashEl=$('nukeFlash');
+    this.addInteractions();this.reset();
+  },
+  addInteractions(){const W=this.W;
+    INT.push({p:W(-2.6,1.15,-7.8),r:.28,label:()=>{if(this.box)return {hint:'The lid hangs open. The button is pressed in.'};
+        if(!this.alert)return {hint:'A steel box bolted to the shed. The lid will not budge.'};return SV.held?{hint:'Put down what you are holding first'}:'Open the box and press the red button';},
+      act:()=>{if(!this.alert||this.box||SV.held)return;this.box=1;Sound.clink();setTimeout(()=>{Sound.thunk();this.emerge=.0001;this.rumble(7);SV.say('A huge steel door is grinding out of the mountain behind you!',5000);},700);}});
+    INT.push({p:W(-2.6,this.sill+1.25,-15.3),r:1.2,max:4,off:()=>this.emerge<1,label:()=>this.doorT<1?{hint:'The blast doors are opening...'}:(this.blastT>=0?{hint:'There is nothing left out here.'}:'Enter the bunker'),act:()=>{if(this.doorT>=1&&this.blastT<0)this.enter();}});
+    INT.push({p:W(-2.6,BK.y+1.2,BK.z1-.1),r:.6,off:()=>!this.inside,label:()=>this.blastT>=0?{hint:'The blast door is sealed. There is nothing out there now.'}:'Leave the bunker',act:()=>{if(this.blastT<0)this.leave();}});
+    INT.push({p:W(-2.6,BK.y+.75,-27.25),r:.7,off:()=>!this.inside||!!SV.seat,label:()=>'Sit on the couch',act:()=>SV.sit('bunker')});
+    INT.push({p:W(-2.6,BK.y+1.55,-30.85),r:.8,max:5,off:()=>!this.inside,label:()=>({hint:this.tv?'Live feed from the camera on top of your antenna tower':'The TV is dead'})});
+  },
+  reset(){this.alert=false;this.phase=0;this.heard=0;this.lookShed=false;this.box=0;this.emerge=0;this.doorT=0;this.tv=false;this.blastT=-1;this.waveR=0;this.erased=false;this.overT=-1;this.deadShown=false;this.siren2=false;this.said1=0;this.staticT=0;
+    if(this.inside)this.inside=false;this.stopSirens();
+    for(let i=RADIO_STATIONS.length-1;i>=0;i--)if(RADIO_STATIONS[i].alertSt)RADIO_STATIONS.splice(i,1);
+    if(this.PG){this.PG.position.z=-4.4;this.PG.visible=false;this.leafL.position.x=0;this.leafR.position.x=0;this.lid.rotation.y=0;this.btn.position.z=-.21;this.BL.visible=false;this.roomParts.forEach(o=>o.visible=false);
+      this.tvScr.visible=this.tvOv.visible=false;this.roomMat.color.setScalar(1);this.sirenLight.visible=false;}
+    if(this.terrain)this.terrain.material.color.setScalar(1);if(Cabin.G)Cabin.G.visible=true;if(this.flashEl)this.flashEl.style.opacity=0;},
+  /* ---- sound ---- */
+  siren(dur){if(!Sound.on||!Sound.ctx)return;const c=Sound.ctx,t=c.currentTime;const out=c.createGain();out.gain.value=0;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1800;const dl=c.createDelay(1);dl.delayTime.value=.42;const fb=c.createGain();fb.gain.value=.32;
+    lp.connect(out);out.connect(Sound.master);out.connect(dl);dl.connect(fb).connect(dl);dl.connect(Sound.master);
+    const os=[0,1].map(i=>{const o=c.createOscillator();o.type=i?'square':'sawtooth';o.connect(lp);return o;});
+    const cyc=8.5;for(let k=0;k*cyc<dur;k++){const s=t+k*cyc;os.forEach((o,i)=>{const m=i?1.5:1;o.frequency.setValueAtTime(170*m,s);o.frequency.linearRampToValueAtTime(610*m,s+3.6);o.frequency.setValueAtTime(610*m,s+4.6);o.frequency.linearRampToValueAtTime(170*m,s+8.5);});}
+    out.gain.setValueAtTime(0,t);out.gain.linearRampToValueAtTime(.075,t+2);out.gain.setValueAtTime(.075,t+dur-3);out.gain.linearRampToValueAtTime(0,t+dur);
+    os.forEach(o=>{o.start(t);o.stop(t+dur+.1);});const rec={out,os,lp};this.sirens.push(rec);setTimeout(()=>{const i=this.sirens.indexOf(rec);if(i>=0)this.sirens.splice(i,1);},dur*1000+300);},
+  stopSirens(){this.sirens.forEach(s=>{try{s.out.disconnect();s.os.forEach(o=>o.stop());}catch(e){}});this.sirens=[];},
+  rumble(dur,vol,lpf){if(!Sound.on||!Sound.ctx)return;const c=Sound.ctx,t=c.currentTime,s=c.createBufferSource(),lp=c.createBiquadFilter(),g=c.createGain();
+    s.buffer=Sound.white;s.loop=true;lp.type='lowpass';lp.frequency.value=lpf||140;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol||.5,t+.4);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+    s.connect(lp).connect(g).connect(Sound.master);s.start(t);s.stop(t+dur+.1);},
+  boom(){if(!Sound.on||!Sound.ctx)return;const c=Sound.ctx,inn=this.inside,dly=inn?0:Math.min(2.5,camera.position.distanceTo(this.gz)/343);
+    setTimeout(()=>{this.rumble(inn?16:12,inn?.9:1.4,inn?90:220);Sound.tone(48,22,c.currentTime,9,inn?.5:.7,'sine');Sound.noise(1.6,400,.4,inn?.3:.9,'lowpass');},dly*1000);},
+  /* ---- moving in and out of the bunker ---- */
+  face(dx,dz){const d=Cabin.W(0,0,0),q=Cabin.W(dx,0,dz);yaw=Math.atan2(-(q.x-d.x),-(q.z-d.z));pitch=0;},
+  enter(){this.inside=true;this.roomParts.forEach(o=>o.visible=true);this.tv=true;this.tvScr.visible=this.tvOv.visible=true;
+    camera.position.copy(Cabin.W(BK.x,BK.y+1.65,BK.z1-.6));this.face(0,-1);SV.vy=0;Sound.thunk();
+    if(!this.said1){this.said1=1;SV.say('A single bulb lights a couch and a TV wired to a car battery. The TV shows a live feed from the top of your antenna tower.',7000);}},
+  leave(){this.inside=false;this.roomParts.forEach(o=>o.visible=false);this.tv=false;this.tvScr.visible=this.tvOv.visible=false;const w=Cabin.W(BK.x,0,-13.2);camera.position.set(w.x,heightAt(w.x,w.z)+1.65,w.z);this.face(0,1);SV.vy=0;Sound.thunk();},
+  /* ---- every frame ---- */
+  update(dt){if(!this.PG)return;const on=SV.on&&!SV.dead&&!SV.paused;const g=SV.g2();
+    if(on&&SV.day===3){
+      if(!this.alert&&g>=32&&g<33.55){this.alert=true;RADIO_STATIONS.push(...ALERT_STATIONS);setFast(false);this.siren(75);this.sirenLight.visible=true;
+        SV.say('8:00 am. An air raid siren is wailing from the top of the mountain! Get on the ham radio and check the 2m band.',8000);}
+      if(this.alert&&!this.lookShed){const s=Radio.cur;if(Radio.open&&Radio.power&&s&&s.alertSt&&Radio.sig>.3)this.heard+=dt*(s.hollis?2:1);
+        if(this.heard>8||g>=32.65){this.lookShed=true;SV.say(this.heard>8?'You remember the shed. Go look behind the shed, now!':'Something tells you to look behind the shed. Go!',6500);}}
+      if(this.alert&&!this.siren2&&g>=33.5){this.siren2=true;this.siren(40);SV.say('9:30 am. The siren is wailing again. Three minutes.',6000);}
+      if(this.alert&&this.blastT<0&&g>=33.55)this.detonate();
+      if(this.blastT>=0&&!this.deadShown&&g>=33.55+10/60)this.tvDies();}
+    /* beacon & siren light */
+    if(this.sirenLight.visible)this.sirenLight.material.opacity=.4+.6*Math.max(0,Math.sin(elapsed*6));
+    /* box, door */
+    if(this.box)this.box=Math.min(1,this.box+dt*1.5);this.lid.rotation.y=1.9*smooth(0,.6,this.box);this.btn.position.z=-.21+.025*smooth(.6,1,this.box);
+    if(this.emerge>0&&this.emerge<1){this.emerge=Math.min(1,this.emerge+dt/6.5);this.PG.visible=true;this.PG.position.z=-4.4*(1-smooth(0,1,this.emerge));
+      const d=camera.position.distanceTo(Cabin.W(-2.6,1,-15));SV.shake=Math.max(SV.shake,clamp(1-d/40,0,1)*.7);if(this.emerge>=1){this.rumble(3,.3,300);}}
+    if(this.emerge>=1&&this.doorT<1){this.doorT=Math.min(1,this.doorT+dt/3.5);const k=smooth(0,1,this.doorT);this.leafL.position.x=-1.3*k;this.leafR.position.x=1.3*k;
+      if(this.doorT>=1)SV.say('The bunker is open. Get inside!',4500);}
+    this.beacon.visible=this.alert&&Math.sin(elapsed*7)>0;
+    /* blast */
+    if(this.blastT>=0)this.blast(dt);
+    if(this.inside){this.roomMat.color.setScalar(this.blastT>=0&&this.blastT<4?(Math.random()<.35?.25:1):(this.deadShown?.85:1));this.bulb.visible=this.roomMat.color.r>.5;}
+    if(this.tv)this.drawOverlay();
+  },
+  detonate(){this.blastT=0;this.hitT=-1;this.BL.visible=true;setFast(false);this.boom();SV.shake=1;
+    if(this.flashEl)this.flashEl.style.opacity=this.inside?0:1;},
+  blast(dt){const t=this.blastT+=dt;
+    const fbR=72*(1-Math.exp(-t*2.1)),rise=Math.min(9*t+fbR*.85,95+20*smooth(4,20,t));
+    this.fireball.scale.setScalar(Math.max(.1,fbR));this.fireball.position.y=rise;
+    const fc=this.fireball.material.color;if(t<.5)fc.setRGB(1,1,1);else if(t<2.5)fc.setRGB(1,1-.35*(t-.5)/2,1-.8*(t-.5)/2);else fc.setRGB(1,clamp(.65-(t-2.5)*.08,.25,1),clamp(.2-(t-2.5)*.03,.05,1));
+    this.fireball.material.opacity=1-smooth(5,14,t);
+    const capR=fbR*1.1+smooth(2,30,t)*75,capY=Math.min(rise,95)+smooth(1,26,t)*150;this.cap.scale.set(capR*1.15,capR*.62,capR*1.15);this.cap.position.y=capY;this.cap.material.opacity=smooth(1.5,5,t)*(1-.4*smooth(60,120,t));
+    const stR=12+10*smooth(3,30,t);this.stem.scale.set(stR,Math.max(1,capY-capR*.3),stR);this.stem.material.opacity=smooth(2.5,7,t)*.95;
+    this.waveR=Math.min(1600,150*t);
+    this.skirt.scale.set(Math.min(this.waveR,520),22+12*smooth(0,10,t),Math.min(this.waveR,520));this.skirt.material.opacity=.55*(1-smooth(20,60,t))+.15;
+    this.wilson.scale.setScalar(this.waveR*.92);this.wilson.material.opacity=.3*(1-smooth(.2,1.6,t));this.wilson.visible=t<1.7;
+    /* erase the valley as the shockwave passes */
+    const dc=Math.hypot(CAB.x-this.gz.x,CAB.z-this.gz.z);if(this.waveR>dc&&!this.erased){this.erased=true;Cabin.G.visible=false;Smoke.reset();if(this.inside)SV.shake=1;}
+    if(this.terrain)this.terrain.material.color.setRGB(1-.72*smooth(0,3,t),1-.78*smooth(0,3,t),1-.8*smooth(0,3,t));
+    birds.forEach(b=>b.visible=false);
+    /* sky and light */
+    const fl=Math.exp(-t*1.4),fl2=Math.exp(-t*3);sun.intensity+=4*fl2;hemi.intensity+=2*fl2;sun.color.lerp(new THREE.Color(1,1,1),fl2);
+    const tint=smooth(.5,6,t),sk=new THREE.Color(.42,.24,.14);const u=sky.material.uniforms;u.uTop.value.lerp(new THREE.Color(.22,.14,.1),tint*.8);u.uHor.value.lerp(sk,tint*.85);scene.fog.color.lerp(sk,tint*.85);
+    sun.color.lerp(new THREE.Color(1,.5,.25),tint*.7);
+    if(this.flashEl&&!this.inside)this.flashEl.style.opacity=Math.max(Math.min(1,fl2*1.2),this.hitT>=0?Math.min(1,(t-this.hitT)*2):0);
+    /* outside? the wave finds you */
+    if(!this.inside&&!SV.dead){const dp=Math.hypot(camera.position.x-this.gz.x,camera.position.z-this.gz.z);if(this.waveR>=dp){if(this.hitT<0){this.hitT=t;SV.shake=1;}this.gameOver('Ground zero.','At 9:33 am the blast wave swept across the valley. Nothing outside survived it.');}}
+    /* feed camera */
+    const top=Cabin.W(-5.6,11.05,1.0);const fc2=this.feedCam;fc2.position.copy(top);fc2.lookAt(this.gz.x,105,this.gz.z);
+    const hit=t>dc/150;if(hit){const j=Math.exp(-(t-dc/150)*1.2);fc2.rotateZ(.07+(Math.random()-.5)*.08*j);fc2.rotateX((Math.random()-.5)*.06*j-.02);}
+  },
+  tvDies(){this.deadShown=true;this.staticT=2.2;setTimeout(()=>{this.tvScr.visible=false;this.tv=false;this.tvOv.visible=true;this.ox.fillStyle='#000';this.ox.fillRect(0,0,384,216);this.otex.needsUpdate=true;
+      setTimeout(()=>this.gameOver('Game over','The antenna feed lasted ten minutes after the blast. Then the screen went dark, and so did the valley.'),2600);},2200);},
+  gameOver(title,text){if(SV.dead)return;SV.dead=true;Radio.close();SV.seat=null;
+    setTimeout(()=>{SV.showEnd(title,text,[],'Start again',()=>{this.reset();SV.restart();});const me=++this.goN;setTimeout(()=>{if(SV.dead&&this.goN===me&&!$('endcard').hidden){this.reset();SV.restart();}},12000);},1200);},
+  goN:0,
+  drawOverlay(){const x=this.ox;const t=this.blastT;
+    if(!this.tv)return;
+    const stat=this.staticT>0||(t>=0&&t>.6&&t<1.6)||(t>1.6&&Math.random()<.04);
+    if(this.staticT>0)this.staticT-=1/60;
+    if(stat){const id=x.createImageData(192,108),d=id.data;for(let i=0;i<d.length;i+=4){const v=Math.random()*255;d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;}x.putImageData(id,0,0);x.drawImage(this.oc,0,0,192,108,0,0,384,216);this.otex.needsUpdate=true;return;}
+    x.clearRect(0,0,384,216);
+    if(t>=0&&t<2.5){x.fillStyle=`rgba(255,255,255,${Math.min(1,Math.exp(-t*1.8)*1.3)})`;x.fillRect(0,0,384,216);}
+    x.font='600 13px monospace';x.fillStyle='rgba(0,0,0,.45)';x.fillRect(6,6,212,22);x.fillStyle=Math.sin(elapsed*5)>0?'#ff3b30':'#7a1a14';x.beginPath();x.arc(18,17,5,0,6.3);x.fill();
+    x.fillStyle='#e8e8e8';x.fillText('LIVE  ANT CAM 1 · TOWER TOP',28,21);
+    const hh=Math.floor(SV.g2())%24,mm=Math.floor((SV.g2()%1)*60),ss=Math.floor(((SV.g2()*60)%1)*60);const ts=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+    x.fillStyle='rgba(0,0,0,.45)';x.fillRect(298,188,80,22);x.fillStyle='#e8e8e8';x.fillText(ts,306,203);
+    if(t>=0){x.fillStyle='rgba(0,0,0,.45)';x.fillRect(6,188,150,22);x.fillStyle='#ffb347';x.fillText('BATT 12.1V  SIGNAL '+(t<2?'LOST':'WEAK'),12,203);}
+    this.otex.needsUpdate=true;},
+  /* ---- collisions & ground ---- */
+  clampRoom(p){const l=cabLocal(p.x,p.z);let lx=clamp(l[0],BK.x0+.3,BK.x1-.3),lz=clamp(l[1],BK.z0+.3,BK.z1-.3);
+    const b=[-3.85,-1.35,-27.65,-26.75],r=.25;const cx=clamp(lx,b[0],b[1]),cz=clamp(lz,b[2],b[3]);let dx=lx-cx,dz=lz-cz;const d2=dx*dx+dz*dz;
+    if(d2<r*r){if(d2>1e-8){const d=Math.sqrt(d2);lx=cx+dx/d*r;lz=cz+dz/d*r;}else lz=b[3]+r;}
+    const w=cabWorld(lx,lz);p.x=w[0];p.z=w[1];},
+  pushPortal(p){if(this.emerge<=0)return;const l=cabLocal(p.x,p.z);const zo=this.PG.position.z;const b=[-5.0,-.2,-18.6+zo,-15.2+zo],r=.35;let lx=l[0],lz=l[1];
+    const cx=clamp(lx,b[0],b[1]),cz=clamp(lz,b[2],b[3]);let dx=lx-cx,dz=lz-cz;const d2=dx*dx+dz*dz;if(d2>=r*r)return;
+    if(d2>1e-8){const d=Math.sqrt(d2);lx=cx+dx/d*r;lz=cz+dz/d*r;}else lz=b[3]+r;const w=cabWorld(lx,lz);p.x=w[0];p.z=w[1];}
+};
+SEATS.bunker={eye:[-2.6,BK.y+1.15,-27.2],dir:[0,-1],stand:[-2.6,-28.1],name:'the couch'};
+{const _g=Cabin.ground.bind(Cabin);Cabin.ground=function(x,z){if(Nuke.inside)return CAB.y+BK.y;const g=_g(x,z);if(Nuke.emerge>=1){const l=cabLocal(x,z);if(l[0]>-4.0&&l[0]<-1.2&&l[1]>-15.3&&l[1]<-11.0)return Math.max(g,CAB.y+Nuke.sill-(l[1]+15.2)*1.6/4.2);}return g;};}
+{const _c=Cabin.collide.bind(Cabin);Cabin.collide=function(p){if(Nuke.inside){Nuke.clampRoom(p);return;}_c(p);Nuke.pushPortal(p);};}
+{const _st=SV.stand.bind(SV);SV.stand=function(){const b=this.seat==='bunker';_st();if(b)camera.position.y=CAB.y+BK.y+1.65;};}
+{const _r=SV.reset.bind(SV);SV.reset=function(){_r();if(Nuke.PG)Nuke.reset();};}
+{const _su=Smoke.update.bind(Smoke);Smoke.update=function(dt){if(Nuke.erased)return;_su(dt);};}
+{const _au=Animals.update.bind(Animals);Animals.update=function(dt){_au(dt);if(Nuke.erased){(Animals.deer||[]).forEach(d=>{if(d.g)d.g.visible=false;});(Animals.ducks||[]).forEach(d=>{if(d.m)d.m.visible=false;});}};}
+/* erase tiles behind the shockwave; render the antenna feed for the bunker TV */
+const FPM=new THREE.Matrix4(),FFR=new THREE.Frustum();let feedTick=0;
+function eraseTiles(){if(Nuke.waveR<=0)return;const R=Nuke.waveR,gz=Nuke.gz;for(const t of tiles){if(Math.hypot(t.cx-gz.x,t.cz-gz.z)<R){for(const m of t.meshes)m.visible=false;if(t.gmesh)t.gmesh.visible=false;if(t.fmesh)t.fmesh.visible=false;}}}
+const _cullMain=cull;
+cull=function(){
+  if(Nuke.tv&&(feedTick++&1)===0){const fc=Nuke.feedCam;if(Nuke.blastT<0){fc.position.copy(Cabin.W(-5.6,11.05,1.0));fc.lookAt(Nuke.gz.x,105,Nuke.gz.z);}
+    fc.updateMatrixWorld();FPM.multiplyMatrices(fc.projectionMatrix,fc.matrixWorldInverse);FFR.setFromProjectionMatrix(FPM);
+    const cx=fc.position.x,cz=fc.position.z,tf=cfg.fogFar+90,gf=cfg.grassFar+75;
+    for(const t of tiles){const d=Math.hypot(t.cx-cx,t.cz-cz);const inF=FFR.intersectsSphere(t.sphere);const tv=inF&&d<tf;for(const m of t.meshes)m.visible=tv;if(t.gmesh)t.gmesh.visible=inF&&d<gf;if(t.fmesh)t.fmesh.visible=inF&&d<cfg.grassFar*1.5+75;}
+    eraseTiles();const rv=Nuke.roomParts.map(o=>o.visible);Nuke.roomParts.forEach(o=>o.visible=false);const sp=sky.position.clone();sky.position.copy(fc.position);
+    renderer.setRenderTarget(Nuke.rt);renderer.render(scene,fc);renderer.setRenderTarget(null);sky.position.copy(sp);Nuke.roomParts.forEach((o,i)=>o.visible=rv[i]);}
+  _cullMain();eraseTiles();};
 
 /* ---------------- Main loop ---------------- */
 const frustum=new THREE.Frustum(),PM=new THREE.Matrix4();

@@ -83,6 +83,23 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 
 ![Reading on the couch](screenshots/reading-on-couch.jpg)
 
+## Day 3: the air raid
+
+> Warning: spoilers.
+
+- **8:00 am on day 3**, after the second night, an air raid siren starts wailing from the top of the nearby mountain.
+- **Get on the ham radio** and check the **2m band**. Five stations are on the air: the county emergency repeater (145.110), State Patrol dispatch (146.940), the valley emergency net (147.330), the dam crew (146.520) and Old Hollis (145.490). They all say the same thing: ICBMs from Russia are inbound and you need to take cover.
+- **Look behind the shed.** A steel box is bolted to the back wall. Open it and press the red button, and a huge blast door grinds out of the mountain behind you.
+- **Inside the bunker** a single bulb hangs from the ceiling over a couch, and a TV wired to a car battery shows a live feed from the camera on top of your antenna tower.
+- **9:30 am:** the siren sounds again. **9:33 am:** ground zero. Watch on the TV as the blast wave erases the valley.
+- About ten minutes later the feed dies, the screen goes dark, and it's **game over**. The game restarts on its own.
+- If you're still outside at 9:33, you won't make it.
+
+| | |
+|---|---|
+| ![Emergency traffic on 2m](screenshots/air-raid-radio.jpg) | ![The blast door](screenshots/bunker-door.jpg) |
+| ![Inside the bunker](screenshots/bunker.jpg) | ![Ground zero on the antenna feed](screenshots/ground-zero-feed.jpg) |
+
 ## The storm
 
 - **From 1:30 am** a blizzard tears off the mountaintops.
@@ -117,6 +134,7 @@ The Rootwalker still lives in the Blackwood, so keep away.
 | E or click | Use, pick up, light |
 | L | Lantern on / off |
 | Scroll wheel | Zoom in / out (Z resets) |
+| Stove button | Turn the wood burner crackle on or off |
 | Radio | Drag or scroll the knob, arrow keys tune and change band, Shift for big steps, Esc closes |
 | T | Speed up time |
 | 1 2 3 4 | Low, medium, Pi5 OC, high detail |
