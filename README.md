@@ -27,7 +27,9 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
   - Pick a band (80m, 40m, 20m, 2m, AM or shortwave) and turn the knob to tune.
   - You can find emergency nets, an old-timer ham, a news station, a late-night preacher, a post-apocalyptic broadcaster, a numbers station, and a Pentagon advisory about fallout.
   - Transmissions appear as text, and some change after 2:00 am.
-- **Water:** behind the cabin there's a hand pump and a bucket. Pump it full and drink.
+- **Survival bookshelf:** a shelf above the radio holds six books on off-grid living: heat, water, the pantry, solar power, radio, and cold-weather first aid. Take one, sit on the couch and press E to read. Turn pages with the arrow keys or A and D.
+- **Spare bowl:** a clean backup bowl sits on the same shelf. If the main bowl is dirty and you have no water, swap to the spare and wash the other one later. Once the basin has water, wash the spare and it goes back on the shelf.
+- **Water:** behind the cabin there's a hand pump and a bucket. Pump it full and carry it in for washing up.
 - **Swimming:** wade into the river and you'll swim once it gets deep. Fish are visible under the surface.
 - **Zoom:** use the scroll wheel to zoom in and out. Press Z to reset.
 
@@ -63,10 +65,11 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 ## The radio shack
 
 - **Antenna:** a lattice antenna tower with a beam antenna stands beside the cabin, with coax running into the radio.
-- **Battery:** a meter on the wall shows the radio battery as a bar and a percentage, with a green light that glows while the roof panel is charging it. A full charge gives about **3.5 hours** of radio time, and the roof panel recharges it in daylight.
+- **Battery:** a meter on the wall shows the radio battery as a bar and a percentage, with a green light that glows while the roof panel is charging it. A full charge gives about **8 hours** of radio time, and the roof panel recharges it in daylight.
 - **Special stations:**
   - **15.000 MHz:** sounds like the WWV time station, with second ticks, minute tones, alternating 500/600 Hz tones and a voice announcing UTC.
   - **7.030 MHz:** Morse code you can hear, decoded on screen as it's sent.
+  - **14.070 MHz:** PSK31 digital mode. You hear the warble and watch decoded keyboard-to-keyboard traffic from Australia, South America and Antarctic research stations, who are wondering why the north went quiet.
   - **9.395 MHz:** a numbers station read out loud in an eerie voice where the system has one, or with tones where it doesn't.
 - **Once the world is fully frozen:** tuning gets much tighter, and a creepy organ rendition of Bach's *Toccata and Fugue in D minor* plays.
 
@@ -75,6 +78,9 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 | ![Wash basin and bowl](screenshots/wash-basin.jpg) | ![WWV on 15 MHz](screenshots/wwv-time-station.jpg) |
 | ![The shed on day 2](screenshots/shed-day2.jpg) | ![Cooking venison](screenshots/cooking-venison.jpg) |
 | ![Antenna tower](screenshots/antenna-tower.jpg) | ![It has seen you](screenshots/it-has-seen-you.jpg) |
+| ![Survival shelf above the radio](screenshots/survival-shelf.jpg) | ![PSK31 on 14.070 MHz](screenshots/psk31.jpg) |
+
+![Reading on the couch](screenshots/reading-on-couch.jpg)
 
 ## The storm
 

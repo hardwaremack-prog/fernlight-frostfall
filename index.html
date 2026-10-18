@@ -116,6 +116,17 @@ button[aria-pressed="true"]{background:rgba(255,148,64,.16);border-color:rgba(25
 body.survive #bTour,body.survive #bExplore,body.survive #tod,body.survive #clock{display:none}
 body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{display:none}
 #waterfx{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0;transition:opacity .6s;background:linear-gradient(to top,rgba(40,90,120,.55),rgba(40,90,120,.12) 45%,rgba(40,90,120,0) 70%)}
+#reader{position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);padding:16px}
+#reader[hidden]{display:none}
+.rd{width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;background:linear-gradient(#efe4c8,#e2d3ae);color:#2b2216;border-radius:6px;padding:18px 24px;box-shadow:0 14px 50px rgba(0,0,0,.7);border-left:10px solid #6a4a2a}
+.rd-top{display:flex;justify-content:space-between;align-items:center;font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#6a5638}
+.rd h3{font:600 22px/1.25 Georgia,serif;margin:12px 0 10px}
+.rd-page{font:400 17px/1.6 Georgia,serif;margin:0;min-height:8em}
+.rd-sub{font:italic 15px Georgia,serif;margin:0 0 8px}
+.rd-list{margin:0;padding-left:22px}.rd-list li{margin:6px 0}
+.rd-list button{background:none;border:0;padding:4px 0;font:500 17px Georgia,serif;color:#3a2a14;cursor:pointer;text-align:left;text-decoration:underline;text-underline-offset:3px}
+.rd button{font-family:inherit}.rd-top button,.rd-nav button{background:#6a4a2a;color:#f3e8cf;border:0;border-radius:4px;padding:6px 12px;cursor:pointer;font:500 13px var(--ui)}
+.rd-nav{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font:500 12px var(--mono);color:#6a5638}.rd-nav[hidden]{display:none}.rd-nav button:disabled{opacity:.35;cursor:default}
 #radio{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(70px + env(safe-area-inset-bottom,0px));z-index:7;width:min(600px,calc(100vw - 32px))}
 #radio .rp{background:linear-gradient(#2a2c30,#1c1e21);border:1px solid #44474d;border-radius:10px;padding:14px 16px;box-shadow:0 12px 40px rgba(0,0,0,.6);color:#d9d3c4}
 .rp-top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
@@ -210,6 +221,8 @@ body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{di
 </div></div>
 <div id="waterfx"></div>
 <div id="seen" hidden>It has seen you · run</div>
+<div id="reader" hidden><div class="rd"><div class="rd-top"><span>Bookshelf</span><button id="rdClose">Close</button></div><div id="rdBody"></div>
+<div class="rd-nav" id="rdNav"><button id="rdPrev">&lt; Prev</button><span id="rdNum"></span><button id="rdNext">Next &gt;</button></div></div></div>
 <div id="radio" hidden><div class="rp">
   <div class="rp-top"><span class="rp-brand">RIDGEWAY HF-450</span><span class="rp-s" id="rpS"></span><button id="rpClose">Close</button></div>
   <div class="rp-disp"><span id="rpBand">80m</span><span id="rpFreq">3.850</span><span id="rpUnit">MHz</span></div>
@@ -1264,7 +1277,7 @@ const Cabin={G:null,inside:false,door:false,doorA:0,fuel:0,lit:false,candles:[fa
     this.doorW=W(0,1.3,2.65);this.stoveW=W(SX,1.0,SZ+.45);this.smokeW=W(SX,5.25,SZ);this.bowlTopW=W(SX+.25,1.4,SZ+.18);
     this.boxes=[[-3.45,3.45,-2.85,-2.47],[-3.35,-2.97,-2.9,2.9],[2.97,3.35,-2.9,2.9],[-3.45,-.55,2.47,2.85],[.55,3.45,2.47,2.85],
       [SX-.45,SX+.45,SZ-.4,SZ+.4],[-1.64,-.96,-2.5,-1.96],[-.62,.92,-2.52,-1.96],[1.3,2.9,-2.5,-2.1],[.3,1.7,-.12,.72],[1.95,3.0,.6,2.45],[2.96,3.34,4.08,4.34],[-3.34,-2.96,4.08,4.34],[-5.15,-4.45,3.05,3.75]];
-    this.addInteractions();this.build3(W,G,mat);this.build4();this.reset();
+    this.addInteractions();this.build3(W,G,mat);this.build4();this.build5();this.reset();
   },
   addInteractions(){const W=this.W,SX=this.SX,SZ=this.SZ,F=i=>FOODS[i][0];
     INT.push({p:W(0,1.35,2.65),r:.55,label:()=>this.door?'Close the door':'Open the door',act:()=>{this.door=!this.door;Sound.creak();}});
@@ -1794,7 +1807,7 @@ const Hunting={swing:0,
   reset(){Animals.deer.forEach(d=>{d.dead=false;});Animals.ducks.forEach(d=>{d.dead=false;});}
 };
 /* ---------- radio battery, special stations ---------- */
-Radio.batt=3.5;
+Radio.batt=8;
 RADIO_STATIONS.push(
   {b:5,f:15.000,name:'WWV · NIST time signal, Fort Collins, Colorado',type:'wwv',lines:[]},
   {b:1,f:7.030,name:'CW (Morse code) · KB1ICE · 18 words per minute',type:'cw',msg:'CQ CQ CQ DE KB1ICE KB1ICE = THE GLASS COMES AT TWO = STAY BY YOUR FIRE = DO NOT ANSWER THE DOOR = 73 K',lines:[]});
@@ -1946,7 +1959,7 @@ Object.assign(Cabin,{dirty:false,basin:0,trash:0,
         if(h&&h.type==='bucket'&&h.fill>.3){this.basin=3;h.fill=0;Sound.pour();SV.say('The basin is full. Take the empty bucket back to the pump.',2800);}}});
     INT.push({p:W(1.11,.92,-2.27),r:.2,inCab:1,label:()=>SV.held&&SV.held.type==='empty'?'Throw the empty can in the trash':{hint:'Trash can'+(this.trash?' ('+this.trash+' can'+(this.trash>1?'s':'')+')':'')},
       act:()=>{if(SV.held&&SV.held.type==='empty'){SV.held=null;this.trash++;Sound.clink();}}});
-    INT.push({p:W(-2.75,1.76,2.42),r:.2,inCab:1,label:()=>({hint:'Radio battery '+Math.round(Radio.batt/3.5*100)+'% · about '+fmtHM(Radio.batt)+' of radio time, '+(Radio.charging?'charging from the roof panel':Radio.batt>=3.49?'fully charged':'not charging (the panel needs daylight)')})});
+    INT.push({p:W(-2.75,1.76,2.42),r:.2,inCab:1,label:()=>({hint:'Radio battery '+Math.round(Radio.batt/8*100)+'% · about '+fmtHM(Radio.batt)+' of radio time, '+(Radio.charging?'charging from the roof panel':Radio.batt>=7.99?'fully charged':'not charging (the panel needs daylight)')})});
     FOODS.forEach((f,i)=>{const c=this.canP[i];INT.push({p:W(c[0],c[1]+.056,c[2]),r:.065,inCab:1,label:()=>{
         if(!this.canOn[i])return null;const h=SV.held;if(!h)return 'Take the can of '+f[0];if(h.type==='can'&&!h.opened)return 'Swap for the '+f[0];return null;},
       act:()=>{const h=SV.held;if(h&&h.type==='can')this.canOn[h.i]=true;this.canOn[i]=false;SV.held={type:'can',i,opened:false};Sound.clink();}});});
@@ -1973,8 +1986,8 @@ Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,
   seenAlert(){this.say('It has seen you. RUN!',2600);Hunt.dread=1;Hunt.static=Math.max(Hunt.static,.8);},
   reset(){Object.assign(this,{dead:false,won:false,gt:16,wood:0,woodTotal:0,matches:false,held:null,ate:false,found:false,everLit:false,eatenName:'',expo:0,cold:0,vy:0,said:{},warnedLow:false,lastHud:'',lastPrompt:'',
       day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,campGone:false,nightDone:-1,paused:false,shedSeen:false,hungerWarned:0});
-    this.seat=null;Radio.close();Radio.power=false;Radio.want=false;Radio.batt=3.5;Pump.fill=0;Pump.at=true;
-    Cabin.reset();Cabin.dirty=false;Cabin.basin=0;Cabin.trash=0;Cabin.bowlFood=null;Wood.reset();Smoke.reset();Shed.reset();Hunting.reset();this.setLantern(false,true);setFast(false);ICE.uIce.value=0;ICE.uFront.value=400;
+    this.seat=null;Radio.close();Radio.power=false;Radio.want=false;Radio.batt=8;Pump.fill=0;Pump.at=true;
+    Cabin.reset();Cabin.spare=true;Cabin.spareDirty=false;Reader.close();Cabin.dirty=false;Cabin.basin=0;Cabin.trash=0;Cabin.bowlFood=null;Wood.reset();Smoke.reset();Shed.reset();Hunting.reset();this.setLantern(false,true);setFast(false);ICE.uIce.value=0;ICE.uFront.value=400;
     if(Hunt.state!=='dormant')Hunt.despawn();Hunt.static=0;Hunt.dread=0;stamina=100;$('frostfx').style.opacity=0;},
   tick(dt){const g=this.g2(),storm=g>=26&&g<30;const rate=(storm?1/67.5:1/135)*(fast?8:1);this.dgt=0;
     if(this.on&&!this.dead&&!this.paused){this.dgt=dt*rate;this.gt+=this.dgt;}tod=(this.gt%24)/24;},
@@ -2004,8 +2017,8 @@ Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,
     if(Cabin.fuel>=.3)this.warnedLow=false;
     // radio battery: 2.5 hours of radio time, the roof panel charges it in daylight
     if(this.dgt>0){if(Radio.power){Radio.batt-=this.dgt;if(Radio.batt<=0){Radio.batt=0;Radio.power=false;Radio.close();this.say('The radio battery is flat. The solar panel will charge it in daylight.',4000);}}
-      if(dayAmt>.4&&this.gale<.1)Radio.batt=Math.min(3.5,Radio.batt+this.dgt*.9);}
-    Radio.charging=this.on&&!this.paused&&dayAmt>.4&&this.gale<.1&&Radio.batt<3.49;
+      if(dayAmt>.4&&this.gale<.1)Radio.batt=Math.min(8,Radio.batt+this.dgt*1.25);}
+    Radio.charging=this.on&&!this.paused&&dayAmt>.4&&this.gale<.1&&Radio.batt<7.99;
     if(Radio.want&&!Radio.power&&Cabin.cableT>=1&&Radio.batt>.05)Radio.power=true;
     if(this.on&&!this.dead&&!this.paused){
       // hunger: eat every 3 hours
@@ -2022,7 +2035,7 @@ Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,
       if(this.gale>.3&&!Cabin.inside&&(this.howl-=dt)<0){this.howl=1.5+Math.random()*2.5;if(Sound.on){const t=Sound.ctx.currentTime,f=420+Math.random()*380;Sound.tone(f,f*(.7+Math.random()*.5),t,2.2,.035*this.gale,'sine');}}
     }
     $('frostfx').style.opacity=Math.min(1,Math.max(this.expo,this.cold*.9,this.dead?1:0)).toFixed(3);
-    Cabin.update(dt);Cabin.update4(dt);Smoke.update(dt);Storm.update();Wood.update();Radio.update(dt);Pump.update(dt);Music.update();
+    Cabin.update(dt);Cabin.update4(dt);Cabin.update5();Smoke.update(dt);Storm.update();Wood.update();Radio.update(dt);Pump.update(dt);Music.update();
     {const f=camera.fov+(this.zoomT-camera.fov)*Math.min(1,dt*10);if(Math.abs(f-camera.fov)>.01){camera.fov=f;camera.updateProjectionMatrix();}}
     $('waterfx').style.opacity=this.swim?1:0;$('seen').hidden=!(Hunt.state==='hunt'&&!Hunt.caught);
     if(this.campOut>0){fire.light.intensity*=1-this.campOut;const v=this.campOut<.6;fire.flames.forEach(f=>f.visible=v);fire.glow.visible=v;fire.embers.visible=v;}
@@ -2052,7 +2065,7 @@ Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,
     if(html!==this.lastHud){this.lastHud=html;$('obj').innerHTML=html;}}
 });
 Object.assign(Cabin,{
-  update4(dt){if(!this.meterBar)return;const b=Radio.batt/3.5;
+  update4(dt){if(!this.meterBar)return;const b=Radio.batt/8;
     {const on=!!Radio.charging,pulse=.65+.35*Math.sin(elapsed*3);this.ledMat.color.setHex(on?0x4dff6a:0x0e2a14);this.ledGlow.visible=on;this.ledGlow.material.opacity=pulse;
     const pc=Math.round(b*100);if(pc!==this.meterPct){this.meterPct=pc;const g=this.meterCv.getContext('2d');g.fillStyle='#101112';g.fillRect(0,0,256,64);
       g.font='600 30px "IBM Plex Mono", monospace';g.textBaseline='middle';g.fillStyle='#8a8f96';g.fillText('BATT',14,33);
@@ -2064,6 +2077,130 @@ Object.assign(Cabin,{
     if(Pump.bucket)Pump.bucket.visible=Pump.at;if(!Pump.at)Pump.water.visible=false;
     if(h&&h.type==='empty'){const u=this.heldCan.userData;u.l.material.color.setHex(FOODS[h.i][1]);u.top.visible=false;u.food.visible=false;}}
 });
+
+/* ================= FROSTFALL round 4: PSK31, spare bowl, survival bookshelf ================= */
+const BOOKS=[
+ {t:'Heat Without the Grid',c:0x7a2a24,pages:[
+  'A wood stove is only as good as the wood you feed it. Burn seasoned wood: split, stacked off the ground and dried for six months to a year. Dry wood is lighter, has cracks in the end grain, and knocks with a hollow sound against another piece.',
+  'Wet or green wood hisses, smokes and coats the chimney with creosote. Creosote is the main cause of chimney fires. Have the flue cleaned at least once a year, and more often if you burn a lot.',
+  'Light small and build up: crumpled paper, a nest of thin kindling, then wrist-thick pieces once the kindling is roaring. Open the air intake fully to start, then close it down slowly once the firebox is hot. A fire smothered too early just smoulders and smokes.',
+  'Carbon monoxide has no smell. Never burn charcoal or run a generator or camp stove indoors. Fit a battery CO alarm near where people sleep, and test it monthly.',
+  'Heat the room you live in, not the whole house. Close doors to unused rooms, hang blankets over doorways, and stuff gaps under doors. Insulate yourself as well as the room: wool or synthetic layers, a hat, and dry socks.']},
+ {t:'Water You Can Trust',c:0x2a4a7a,pages:[
+  'You need about one gallon (four litres) of water per person per day for drinking and basic cooking, and more in hot weather or for washing. Store at least two weeks of it if you can.',
+  'Boiling is the most reliable way to make water safe. Bring clear water to a rolling boil for one minute. Above about 6,500 feet (2,000 m), boil for three minutes. Let it cool covered.',
+  'If water is cloudy, let it settle and then pour it through a clean cloth or coffee filter before you treat it. Filters remove dirt but most do not remove viruses, so filter and then boil or disinfect.',
+  'Unscented household bleach can disinfect water when boiling is not possible. Follow the dosing on the label or from your local health authority, mix well, and wait at least 30 minutes before drinking. The water should have a faint chlorine smell.',
+  'Well water drawn from deep underground is usually safer than surface water, but have a well tested regularly. Snow and rain collected from roofs can carry dirt, bird droppings and other contamination, so treat it before drinking.']},
+ {t:'The Pantry Year',c:0x5a6a2a,pages:[
+  'Store what you already eat. A pantry full of food nobody likes gets wasted. Canned soups, stews, beans, vegetables, fruit, rice, oats and pasta keep well and make full meals.',
+  'Rotate your stock: first in, first out. Put new cans at the back and take from the front. Write the purchase month on the lid with a marker.',
+  'Throw away any can that is bulging, leaking, deeply dented along the seam, or that spurts when opened. Do not taste it to check.',
+  'Most adults need roughly 2,000 to 2,500 calories a day, and more when doing hard physical work in the cold. Warm food matters too. A hot meal lifts morale as much as it fills you.',
+  'Keep a manual can opener, more than one if you can. Keep a way to cook without power, and plenty of clean bowls and cutlery so washing up never stops a meal.']},
+ {t:'Power from the Sun',c:0xb08a2a,pages:[
+  'A small off-grid system has four parts: the solar panel, a charge controller, a battery, and the things you power. The controller protects the battery from overcharging and should never be skipped.',
+  'Work out your daily energy needs in watt-hours. A radio drawing 10 watts for 8 hours uses 80 watt-hours. Add up every device, then add a safety margin.',
+  'Lead-acid batteries last longest if you avoid draining them below about half their capacity. Lithium iron phosphate batteries tolerate deeper use and live longer, but cost more up front.',
+  'Panels produce far less in winter, on cloudy days and when they are covered in snow or frost. Tilt panels steeply in winter, keep them clear, and plan for several dark days in a row.',
+  'Fuse every positive lead close to the battery. A short circuit across a battery can melt wire and start a fire in seconds.']},
+ {t:'Signals in the Dark',c:0x2a2a2a,pages:[
+  'You can listen to any radio band without a licence. In most countries, including the US, you need an amateur radio licence to transmit on ham frequencies. The entry exams are short and study guides are free.',
+  'In an emergency, local nets meet on agreed frequencies. In North America the national 2-metre FM simplex calling frequency is 146.520 MHz. Listen first, then call.',
+  'Lower HF bands like 80 and 40 metres work best at night over shorter distances. Higher bands like 20 metres reach across the world during the day. Conditions change with the sun, the season and the time.',
+  'Morse code (CW) and digital modes such as PSK31 get through when voice cannot. They use very little power and very little bandwidth, so a weak signal can still be read.',
+  'Write down what you hear: time, frequency, callsign and message. A good log helps others find information later.']},
+ {t:'Cold Weather First Aid',c:0x2a6a6a,pages:[
+  'This book covers the basics. When you can, get proper training and get medical help for anyone who is seriously hurt or ill.',
+  'Hypothermia starts with shivering, cold pale skin, clumsy hands and slurred speech. As it gets worse, shivering may stop and the person becomes confused and drowsy. Severe hypothermia is a medical emergency.',
+  'Move a cold person somewhere warm and out of the wind. Replace wet clothes with dry ones. Warm the core first with blankets and warm (not hot) sweet drinks if they are fully awake and can swallow.',
+  'Frostbite leaves skin white, grey or waxy and numb. Do not rub it, and do not rewarm it if there is a chance it will freeze again. Rewarm gently in warm (not hot) water and seek medical care.',
+  'Prevention is easier than treatment: stay dry, cover your head, hands and feet, eat and drink regularly, and never travel alone in a storm.']}
+];
+const PSK_MSGS=[
+ 'CQ CQ CQ de VK6QRF VK6QRF pse k',
+ 'VK6QRF de LU1XQW: GE OM, ur 599 in Buenos Aires. Name here is Marcelo. Clear skies and 14C. Any word from the north? We hear the northern stations have gone quiet. BTU',
+ 'LU1XQW de VK6QRF: FB Marcelo. Perth here, 31C and still, op is Dana. Rig 50W into a vertical on the beach. Yes, several northern nets dropped off at their 0200 local. Reports say a hard freeze. Hope they are inside. KN',
+ 'CQ ANT CQ ANT de KC4ICE KC4ICE McMurdo Station Antarctica',
+ 'KC4ICE: temp -58C, wind 40 kt, aurora australis strong all night. Our magnetometers show the same disturbance the northern stations described before they went silent. Logging all contacts. Pse QSL via bureau.',
+ 'KC4ICE de PY5ZKT: Curitiba Brazil copies you 579. Thank you for the report. Heavy rain here, power is on. Relaying your data to the net on 7.188. 73',
+ 'CQ CQ de CE3QXV Santiago Chile. Ice fog in the Andes passes this morning, roads closed above 2000 m. Anyone copy a northern station? Pse k',
+ 'CE3QXV de VK4FRZ Brisbane: copied faint CW from North America on 7.030 an hour ago, operator said "the glass comes at two". Then nothing. 73 and stay safe',
+ 'DP0ICE de VP8RTH Rothera Research Station, Adelaide Island. Sea ice closing in early this year. All 22 crew well. Generator and solar holding. QRT for supper, 73 to all'
+];
+const PSK={osc:null,g:null,next:0,mi:0,ci:0,pause:0,log:[],
+  stop(){if(this.osc){try{this.osc.stop();}catch(e){}this.osc=null;}if(this.g){this.g.disconnect();this.g=null;}this.on=false;},
+  audio(){if(!Sound.on||!Sound.ctx)return;const c=Sound.ctx;
+    if(!this.osc){this.osc=c.createOscillator();this.osc.frequency.value=1000;this.g=c.createGain();this.g.gain.value=0;const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1000;bp.Q.value=4;
+      this.osc.connect(this.g).connect(bp).connect(Sound.master);this.osc.start();this.next=c.currentTime+.05;}
+    const B=.032,A=.06*(.4+.6*Radio.sig);if(this.next<c.currentTime)this.next=c.currentTime+.02;const typing=this.pause<=0;
+    while(this.next<c.currentTime+.6){const t=this.next;const bit=typing?(Math.random()<.55?1:0):0;
+      if(bit){this.g.gain.setValueAtTime(A,t);}else{this.g.gain.setValueAtTime(A,t);this.g.gain.linearRampToValueAtTime(0,t+B/2);this.g.gain.linearRampToValueAtTime(A,t+B);}
+      this.next+=B;}},
+  update(dt){if(!this.on){this.on=true;this.mi=0;this.ci=0;this.pause=1;this.log=[];}
+    this.audio();
+    const msg=PSK_MSGS[this.mi%PSK_MSGS.length];
+    if(this.pause>0)this.pause-=dt;else{this.ci+=dt*6;if(this.ci>=msg.length){this.log.push(msg);if(this.log.length>5)this.log.shift();this.mi++;this.ci=0;this.pause=2.5;}}
+    const cur=this.pause>0?'':msg.slice(0,Math.floor(this.ci));
+    const wf=Array.from({length:44},(_,i)=>{const d=Math.abs(i-22);return d<2&&this.pause<=0?'█':d<3?'▓':Math.random()<.12?'░':' ';}).join('');
+    $('rpText').innerHTML=`<p class="hd">— PSK31 · 14.070 MHz · digital keyboard-to-keyboard —</p><p class="dim" style="letter-spacing:0">${wf}</p>`+
+      this.log.map(l=>`<p style="font-family:var(--mono);font-size:12px">${Radio.garble(l)}</p>`).join('')+(cur?`<p style="font-family:var(--mono);font-size:12px;color:#ffb347">${Radio.garble(cur)}<span class="cur">▌</span></p>`:'')+
+      (Sound.on?'':'<p class="dim">Turn on Sound to hear the PSK31 warble.</p>');
+    const el=$('rpText');el.scrollTop=el.scrollHeight;}
+};
+RADIO_STATIONS.push({b:2,f:14.070,name:'PSK31 · digital mode',type:'psk',lines:[]});
+const _rfxUpdate=RFX.update.bind(RFX);
+RFX.update=function(dt){const on=Radio.open&&Radio.power&&Radio.cur&&Radio.cur.type==='psk'&&Radio.sig>.2;
+  if(on){if(this.st)this.stop();PSK.update(dt);}else{if(PSK.on)PSK.stop();_rfxUpdate(dt);}};
+/* ---------- reader overlay ---------- */
+const Reader={open:false,lib:false,b:0,p:0,
+  showLib(){this.lib=true;this.open=true;$('reader').hidden=false;try{document.exitPointerLock&&document.exitPointerLock();}catch(e){}
+    $('rdBody').innerHTML='<h3>Off-grid survival shelf</h3><p class="rd-sub">Pick a book to take. Sit on the couch to read it.</p><ol class="rd-list">'+BOOKS.map((b,i)=>`<li><button data-b="${i}">${b.t}</button></li>`).join('')+'</ol>';
+    $('rdNav').hidden=true;$('rdBody').querySelectorAll('button[data-b]').forEach(e=>e.onclick=()=>{SV.held={type:'book',i:+e.dataset.b};Sound.clink();this.close();SV.say('You take "'+BOOKS[+e.dataset.b].t+'". Sit on the couch to read it.',3000);});},
+  openBook(i){this.lib=false;this.open=true;this.b=i;this.p=0;$('reader').hidden=false;$('rdNav').hidden=false;try{document.exitPointerLock&&document.exitPointerLock();}catch(e){}this.render();},
+  render(){const b=BOOKS[this.b];$('rdBody').innerHTML=`<h3>${b.t}</h3><p class="rd-page">${b.pages[this.p]}</p>`;$('rdNum').textContent='Page '+(this.p+1)+' of '+b.pages.length;
+    $('rdPrev').disabled=this.p===0;$('rdNext').disabled=this.p===b.pages.length-1;},
+  turn(d){const n=BOOKS[this.b].pages.length;this.p=clamp(this.p+d,0,n-1);this.render();Sound.noise(.12,3000,.5,.05);},
+  close(){this.open=false;this.lib=false;$('reader').hidden=true;},
+  key(e){if(e.code==='Escape'||e.code==='KeyE'){this.close();return;}if(this.lib)return;if(e.code==='ArrowRight'||e.code==='KeyD')this.turn(1);if(e.code==='ArrowLeft'||e.code==='KeyA')this.turn(-1);}
+};
+/* ---------- shelf above the radio: spare bowl + books ---------- */
+Object.assign(Cabin,{spare:true,spareDirty:false,
+  build5(){const G=this.G,W=this.W,L=[],P=(g,c,sh)=>L.push([g,c,sh]);
+    P(bx(-2.52,-1.08,1.97,2.0,2.24,2.47),0x7a5a3a);P(bx(-2.42,-2.38,1.82,1.97,2.42,2.47),0x3a3a3a);P(bx(-1.22,-1.18,1.82,1.97,2.42,2.47),0x3a3a3a);
+    let x=-2.47;BOOKS.forEach((b,i)=>{const w=.05+hash(i,31)*.025,h=.2+hash(i,32)*.07;P(bx(x,x+w,2.0,2.0+h,2.28,2.45),b.c,(xx,y)=>y>2.0+h-.01?1.25:1);P(bx(x+.004,x+w-.004,2.0+h*.62,2.0+h*.66,2.279,2.281),0xd9c9a0);x+=w+.006;});
+    P(bx(x+.01,x+.17,2.0,2.04,2.3,2.44),0x5a3a2a);
+    G.add(new THREE.Mesh(part(L),this.mat));
+    const bm=new THREE.MeshLambertMaterial({color:0xbfc3c8,side:THREE.DoubleSide});
+    const mk=()=>{const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.CylinderGeometry(.11,.065,.06,16,1,true).translate(0,.03,0),bm),new THREE.Mesh(new THREE.CircleGeometry(.066,16).rotateX(-Math.PI/2).translate(0,.002,0),bm));return g;};
+    this.spareM=mk();this.spareM.position.set(-1.42,2.0,2.36);G.add(this.spareM);
+    this.spareDirtyM=mk();const smear=new THREE.Mesh(new THREE.CircleGeometry(.06,12).rotateX(-Math.PI/2).translate(0,.01,0),new THREE.MeshLambertMaterial({color:0x6a5a48}));this.spareDirtyM.add(smear);
+    this.spareDirtyM.position.set(.62,1.47,-2.2);this.spareDirtyM.rotation.z=.35;G.add(this.spareDirtyM);
+    const hm=c=>new THREE.MeshLambertMaterial({color:c,depthTest:false,depthWrite:false});
+    this.heldBook=new THREE.Mesh(new THREE.BoxGeometry(.14,.2,.035),hm(0x7a2a24));this.heldBook.position.set(.2,-.24,-.44);this.heldBook.rotation.set(.4,-.3,.15);this.heldBook.renderOrder=30;camera.add(this.heldBook);
+    INT.push({p:W(-1.42,2.04,2.36),r:.16,inCab:1,off:()=>!this.spare,label:()=>{const h=SV.held;
+        if(this.dirty&&(!h||h.type==='dirty'))return 'Use the spare clean bowl';return {hint:'A spare clean bowl, for when the other one is dirty'};},
+      act:()=>{if(!this.dirty)return;if(SV.held&&SV.held.type==='dirty')SV.held=null;this.dirty=false;this.bowl='counter';this.bowlFood=null;this.heat=0;this.spare=false;this.spareDirty=true;Sound.clink();
+        SV.say('You leave the dirty bowl in the wash basin and put the spare on the counter. Wash it when you can.',3600);}});
+    INT.push({p:W(-2.25,2.12,2.36),r:.26,inCab:1,label:()=>{const h=SV.held;if(h&&h.type==='book')return 'Put "'+BOOKS[h.i].t+'" back on the shelf';if(h)return {hint:'Survival books. Your hands are full.'};return 'Choose a survival book';},
+      act:()=>{const h=SV.held;if(h&&h.type==='book'){SV.held=null;Sound.clink();return;}if(!h)Reader.showLib();}});
+    this.readP=new THREE.Vector3();
+    INT.push({p:this.readP,r:.6,inCab:1,off:()=>!(SV.seat==='couch'&&SV.held&&SV.held.type==='book'&&!Reader.open),label:()=>'Read "'+BOOKS[SV.held.i].t+'"',act:()=>Reader.openBook(SV.held.i)});
+    const basin=INT.find(it=>it.p.distanceTo(W(.66,1.45,-2.22))<.02);
+    if(basin){const L0=basin.label,A0=basin.act;const can=()=>{const h=SV.held;return this.spareDirty&&this.basin>0&&!(this.dirty&&this.bowl==='counter')&&(!h||(h.type==='bucket'&&h.fill<=.3));};
+      basin.label=()=>can()?'Wash the spare bowl in the basin':L0();
+      basin.act=()=>{if(can()){this.basin--;this.spareDirty=false;this.spare=true;Sound.pour();SV.say('The spare bowl is clean and back on the shelf above the radio.',2800);return;}A0();};}
+  },
+  update5(){if(!this.spareM)return;camera.getWorldDirection(V1);this.readP.copy(camera.position).addScaledVector(V1,1.2);this.spareM.visible=this.spare;this.spareDirtyM.visible=this.spareDirty;const h=SV.held;this.heldBook.visible=!!(h&&h.type==='book')&&!Reader.open;
+    if(h&&h.type==='book')this.heldBook.material.color.setHex(BOOKS[h.i].c);}
+});
+
+const _svKey=SV.keydown.bind(SV);
+SV.keydown=function(e){if(Reader.open){if(!e.repeat)Reader.key(e);e.preventDefault();return true;}return _svKey(e);};
+const _svSit=SV.sit.bind(SV);
+SV.sit=function(k){_svSit(k);if(k==='couch'&&this.held&&this.held.type==='book')this.say('Press E to read "'+BOOKS[this.held.i].t+'".',2600);};
+const _svStand=SV.stand.bind(SV);SV.stand=function(){if(Reader.open)Reader.close();_svStand();};
+$('rdPrev').onclick=()=>Reader.turn(-1);$('rdNext').onclick=()=>Reader.turn(1);$('rdClose').onclick=()=>Reader.close();
 
 /* ---------------- Main loop ---------------- */
 const frustum=new THREE.Frustum(),PM=new THREE.Matrix4();
