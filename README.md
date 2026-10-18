@@ -63,7 +63,7 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 ## The radio shack
 
 - **Antenna:** a lattice antenna tower with a beam antenna stands beside the cabin, with coax running into the radio.
-- **Battery:** a meter on the wall shows the radio battery as a bar and a percentage. A full charge gives about **3.5 hours** of radio time, and the roof panel recharges it in daylight.
+- **Battery:** a meter on the wall shows the radio battery as a bar and a percentage, with a green light that glows while the roof panel is charging it. A full charge gives about **3.5 hours** of radio time, and the roof panel recharges it in daylight.
 - **Special stations:**
   - **15.000 MHz:** sounds like the WWV time station, with second ticks, minute tones, alternating 500/600 Hz tones and a voice announcing UTC.
   - **7.030 MHz:** Morse code you can hear, decoded on screen as it's sent.

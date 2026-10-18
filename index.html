@@ -1897,6 +1897,10 @@ Object.assign(Cabin,{dirty:false,basin:0,trash:0,
     // dynamic pieces
     {const cv=document.createElement('canvas');cv.width=256;cv.height=64;this.meterCv=cv;this.meterTex=new THREE.CanvasTexture(cv);this.meterPct=-1;
       const lab=new THREE.Mesh(new THREE.PlaneGeometry(.34,.085).rotateY(Math.PI),new THREE.MeshBasicMaterial({map:this.meterTex}));lab.position.set(-2.76,1.85,2.412);G.add(lab);}
+    this.ledMat=new THREE.MeshBasicMaterial({color:0x0e2a14});const led=new THREE.Mesh(new THREE.CircleGeometry(.014,12).rotateY(Math.PI),this.ledMat);led.position.set(-2.6,1.66,2.411);G.add(led);
+    this.ledGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex([[0,'rgba(120,255,140,.9)'],[1,'rgba(60,255,90,0)']]),blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));this.ledGlow.scale.set(.1,.1,1);this.ledGlow.position.set(-2.6,1.66,2.405);G.add(this.ledGlow);
+    {const lc=document.createElement('canvas');lc.width=128;lc.height=32;const g=lc.getContext('2d');g.fillStyle='#2a2b2e';g.fillRect(0,0,128,32);g.font='600 18px monospace';g.fillStyle='#8a8f96';g.textBaseline='middle';g.fillText('CHARGE',6,17);
+      const lt=new THREE.Mesh(new THREE.PlaneGeometry(.11,.028).rotateY(Math.PI),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(lc)}));lt.position.set(-2.7,1.66,2.411);G.add(lt);}
     this.meterBar=new THREE.Mesh(new THREE.PlaneGeometry(.32,.05).translate(.16,0,0).rotateY(Math.PI),new THREE.MeshBasicMaterial({color:0x4ad66d}));this.meterBar.position.set(-2.59,1.765,2.412);G.add(this.meterBar);
     this.basinWater=new THREE.Mesh(new THREE.CircleGeometry(.19,16).rotateX(-Math.PI/2),new THREE.MeshLambertMaterial({color:0x5c7f90}));this.basinWater.position.set(.66,1.47,-2.22);G.add(this.basinWater);
     const bot=new THREE.Mesh(new THREE.CircleGeometry(.19,16).rotateX(-Math.PI/2),new THREE.MeshLambertMaterial({color:0x6a6e72}));bot.position.set(.66,1.493,-2.22);G.add(bot);this.basinBottom=bot;
@@ -1942,7 +1946,7 @@ Object.assign(Cabin,{dirty:false,basin:0,trash:0,
         if(h&&h.type==='bucket'&&h.fill>.3){this.basin=3;h.fill=0;Sound.pour();SV.say('The basin is full. Take the empty bucket back to the pump.',2800);}}});
     INT.push({p:W(1.11,.92,-2.27),r:.2,inCab:1,label:()=>SV.held&&SV.held.type==='empty'?'Throw the empty can in the trash':{hint:'Trash can'+(this.trash?' ('+this.trash+' can'+(this.trash>1?'s':'')+')':'')},
       act:()=>{if(SV.held&&SV.held.type==='empty'){SV.held=null;this.trash++;Sound.clink();}}});
-    INT.push({p:W(-2.75,1.76,2.42),r:.2,inCab:1,label:()=>({hint:'Radio battery '+Math.round(Radio.batt/3.5*100)+'% · about '+fmtHM(Radio.batt)+' of radio time. The roof panel charges it in daylight.'})});
+    INT.push({p:W(-2.75,1.76,2.42),r:.2,inCab:1,label:()=>({hint:'Radio battery '+Math.round(Radio.batt/3.5*100)+'% · about '+fmtHM(Radio.batt)+' of radio time, '+(Radio.charging?'charging from the roof panel':Radio.batt>=3.49?'fully charged':'not charging (the panel needs daylight)')})});
     FOODS.forEach((f,i)=>{const c=this.canP[i];INT.push({p:W(c[0],c[1]+.056,c[2]),r:.065,inCab:1,label:()=>{
         if(!this.canOn[i])return null;const h=SV.held;if(!h)return 'Take the can of '+f[0];if(h.type==='can'&&!h.opened)return 'Swap for the '+f[0];return null;},
       act:()=>{const h=SV.held;if(h&&h.type==='can')this.canOn[h.i]=true;this.canOn[i]=false;SV.held={type:'can',i,opened:false};Sound.clink();}});});
@@ -2001,6 +2005,7 @@ Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,
     // radio battery: 2.5 hours of radio time, the roof panel charges it in daylight
     if(this.dgt>0){if(Radio.power){Radio.batt-=this.dgt;if(Radio.batt<=0){Radio.batt=0;Radio.power=false;Radio.close();this.say('The radio battery is flat. The solar panel will charge it in daylight.',4000);}}
       if(dayAmt>.4&&this.gale<.1)Radio.batt=Math.min(3.5,Radio.batt+this.dgt*.9);}
+    Radio.charging=this.on&&!this.paused&&dayAmt>.4&&this.gale<.1&&Radio.batt<3.49;
     if(Radio.want&&!Radio.power&&Cabin.cableT>=1&&Radio.batt>.05)Radio.power=true;
     if(this.on&&!this.dead&&!this.paused){
       // hunger: eat every 3 hours
@@ -2048,7 +2053,8 @@ Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,
 });
 Object.assign(Cabin,{
   update4(dt){if(!this.meterBar)return;const b=Radio.batt/3.5;
-    {const pc=Math.round(b*100);if(pc!==this.meterPct){this.meterPct=pc;const g=this.meterCv.getContext('2d');g.fillStyle='#101112';g.fillRect(0,0,256,64);
+    {const on=!!Radio.charging,pulse=.65+.35*Math.sin(elapsed*3);this.ledMat.color.setHex(on?0x4dff6a:0x0e2a14);this.ledGlow.visible=on;this.ledGlow.material.opacity=pulse;
+    const pc=Math.round(b*100);if(pc!==this.meterPct){this.meterPct=pc;const g=this.meterCv.getContext('2d');g.fillStyle='#101112';g.fillRect(0,0,256,64);
       g.font='600 30px "IBM Plex Mono", monospace';g.textBaseline='middle';g.fillStyle='#8a8f96';g.fillText('BATT',14,33);
       g.fillStyle=b>.5?'#4ad66d':b>.2?'#e0b34a':'#ff5a4a';g.textAlign='right';g.fillText(pc+'%',242,33);g.textAlign='left';this.meterTex.needsUpdate=true;}}this.meterBar.scale.x=Math.max(.001,b);this.meterBar.material.color.setHex(b>.5?0x4ad66d:b>.2?0xe0b34a:0xd9473a);
     this.basinWater.visible=this.basin>0;this.basinWater.position.y=1.43+this.basin*.018;this.basinBottom.visible=this.basin===0;
