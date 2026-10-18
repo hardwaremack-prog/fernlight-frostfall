@@ -48,6 +48,7 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
   - Go out back and pump the bucket full (three pumps), then pick it up and carry it inside.
   - Pour it into the **wash basin** on the counter. That's enough water for 3 washes.
   - Wash the bowl and it's ready to reuse. Take the empty bucket back to the pump.
+- **Water for the morning:** the pump freezes solid overnight. Before the storm, pump the bucket full and store it on the **shelf above the wash basin**. In the frozen morning, take it down and pour it into the basin to wash up.
 
 ## Days and levels
 
