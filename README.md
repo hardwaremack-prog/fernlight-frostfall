@@ -42,7 +42,10 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 
 - **Hunger:** the food meter empties over 3 hours. Eat before it runs out, or you start starving.
 - **Cooking from a can:** take a can from the shelf and open it with the can opener. Pour it into the metal bowl, then **throw the empty can in the trash**. Heat the bowl on the wood burner and eat.
-- **Washing up:** after eating, the bowl is dirty. Carry the bucket from the pump inside and pour it into the **wash basin** on the counter (enough for 3 washes). Wash the bowl and it goes back on the counter, ready to reuse. Take the empty bucket back to the pump.
+- **Washing up:** after eating, pick up the dirty bowl and set it on the counter.
+  - Go out back and pump the bucket full (three pumps), then pick it up and carry it inside.
+  - Pour it into the **wash basin** on the counter. That's enough water for 3 washes.
+  - Wash the bowl and it's ready to reuse. Take the empty bucket back to the pump.
 
 ## Days and levels
 
@@ -60,7 +63,7 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 ## The radio shack
 
 - **Antenna:** a lattice antenna tower with a beam antenna stands beside the cabin, with coax running into the radio.
-- **Battery:** a meter on the wall shows the radio battery. A full charge gives about **2.5 hours** of radio time, and the roof panel recharges it in daylight.
+- **Battery:** a meter on the wall shows the radio battery. A full charge gives about **3.5 hours** of radio time, and the roof panel recharges it in daylight.
 - **Special stations:**
   - **15.000 MHz:** sounds like the WWV time station, with second ticks, minute tones, alternating 500/600 Hz tones and a voice announcing UTC.
   - **7.030 MHz:** Morse code you can hear, decoded on screen as it's sent.

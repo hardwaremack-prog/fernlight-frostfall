@@ -1794,7 +1794,7 @@ const Hunting={swing:0,
   reset(){Animals.deer.forEach(d=>{d.dead=false;});Animals.ducks.forEach(d=>{d.dead=false;});}
 };
 /* ---------- radio battery, special stations ---------- */
-Radio.batt=2.5;
+Radio.batt=3.5;
 RADIO_STATIONS.push(
   {b:5,f:15.000,name:'WWV · NIST time signal, Fort Collins, Colorado',type:'wwv',lines:[]},
   {b:1,f:7.030,name:'CW (Morse code) · KB1ICE · 18 words per minute',type:'cw',msg:'CQ CQ CQ DE KB1ICE KB1ICE = THE GLASS COMES AT TWO = STAY BY YOUR FIRE = DO NOT ANSWER THE DOOR = 73 K',lines:[]});
@@ -1918,24 +1918,29 @@ Object.assign(Cabin,{dirty:false,basin:0,trash:0,
       act:()=>{const h=SV.held;if(h&&h.type==='bowl'){SV.held=null;this.bowl='stove';this.heat=0;Sound.clink();return;}
         if(this.bowl==='stove'&&this.bowlFood&&this.heat>=1){const f=this.bowlFood;SV.eat(f);this.bowlFood=null;this.dirty=true;this.heat=0;return;}
         if(this.bowl==='stove'&&this.dirty&&!h){SV.held={type:'dirty'};this.bowl='held';Sound.clink();}}});
-    INT.push({p:W(.15,1.41,-2.2),r:.17,inCab:1,label:()=>{if(this.bowl!=='counter')return null;const h=SV.held;if(this.opening)return {hint:'Opening the can...'};
+    INT.push({p:W(.15,1.41,-2.2),r:.2,inCab:1,label:()=>{const h=SV.held;if(this.bowl!=='counter')return h&&h.type==='dirty'?'Set the dirty bowl on the counter':null;if(this.opening)return {hint:'Opening the can...'};
+        if(this.dirty)return (h&&(h.type==='can'||h.type==='meat'))?{hint:'Wash the bowl in the basin first'}:{hint:'A dirty bowl. Wash it in the basin.'};
         if(h&&h.type==='can'&&!h.opened)return 'Open the '+FOODS[h.i][0]+' with the can opener';
         if(h&&h.type==='can'&&h.opened)return this.bowlFood?{hint:'The bowl already has food in it'}:'Pour the '+FOODS[h.i][0]+' into the metal bowl';
         if(h&&h.type==='meat')return this.bowlFood?{hint:'The bowl already has food in it'}:'Put the '+(h.kind)+' in the metal bowl';
         if(!h&&this.bowlFood)return 'Pick up the bowl of '+nm();return {hint:'A clean metal bowl'};},
-      act:()=>{const h=SV.held;if(h&&h.type==='can'&&!h.opened){this.openCan();return;}
+      act:()=>{const h=SV.held;if(h&&h.type==='dirty'&&this.bowl==='held'){this.bowl='counter';SV.held=null;Sound.clink();return;}if(this.dirty)return;if(h&&h.type==='can'&&!h.opened){this.openCan();return;}
         if(h&&h.type==='can'&&h.opened&&!this.bowlFood){this.bowlFood=Meal.ofCan(h.i);SV.held={type:'empty',i:h.i};Sound.pour();SV.say('Now put the empty can in the trash.',2400);return;}
         if(h&&h.type==='meat'&&!this.bowlFood){this.bowlFood=Meal.meat(h.kind);SV.held=null;Sound.clink();return;}
         if(!h&&this.bowlFood){SV.held={type:'bowl'};this.bowl='held';Sound.clink();}}});
     INT.push({p:W(.66,1.45,-2.22),r:.22,inCab:1,label:()=>{const h=SV.held;
         if(h&&h.type==='dirty')return this.basin>0?'Wash the bowl in the basin':{hint:'The wash basin is empty. Bring a bucket of water from the pump.'};
-        if(h&&h.type==='bucket')return h.fill>.3?'Pour the water into the wash basin':{hint:'The bucket is empty'};
+        const emptyB=h&&h.type==='bucket'&&h.fill<=.3;
+        if(h&&h.type==='bucket'&&!emptyB)return 'Pour the water into the wash basin';
+        if((!h||emptyB)&&this.dirty&&this.bowl==='counter'&&this.basin>0)return 'Wash the dirty bowl in the basin';
+        if(emptyB)return {hint:'The bucket is empty. Take it back to the pump.'};
+        if(!h&&this.dirty&&this.bowl==='counter')return this.basin>0?'Wash the dirty bowl in the basin':{hint:'The wash basin is empty. Bring a bucket of water from the pump.'};
         return {hint:this.basin>0?'Wash basin ('+this.basin+' wash'+(this.basin>1?'es':'')+' of water left)':'Wash basin (empty)'};},
-      act:()=>{const h=SV.held;if(h&&h.type==='dirty'&&this.basin>0){this.basin--;this.dirty=false;this.bowl='counter';SV.held=null;Sound.pour();SV.say('The bowl is clean and back on the counter.',2200);return;}
+      act:()=>{const h=SV.held;if((!h||(h.type==='bucket'&&h.fill<=.3))&&this.dirty&&this.bowl==='counter'&&this.basin>0){this.basin--;this.dirty=false;Sound.pour();SV.say('The bowl is clean.',2000);return;}if(h&&h.type==='dirty'&&this.basin>0){this.basin--;this.dirty=false;this.bowl='counter';SV.held=null;Sound.pour();SV.say('The bowl is clean and back on the counter.',2200);return;}
         if(h&&h.type==='bucket'&&h.fill>.3){this.basin=3;h.fill=0;Sound.pour();SV.say('The basin is full. Take the empty bucket back to the pump.',2800);}}});
     INT.push({p:W(1.11,.92,-2.27),r:.2,inCab:1,label:()=>SV.held&&SV.held.type==='empty'?'Throw the empty can in the trash':{hint:'Trash can'+(this.trash?' ('+this.trash+' can'+(this.trash>1?'s':'')+')':'')},
       act:()=>{if(SV.held&&SV.held.type==='empty'){SV.held=null;this.trash++;Sound.clink();}}});
-    INT.push({p:W(-2.75,1.76,2.42),r:.2,inCab:1,label:()=>({hint:'Radio battery '+Math.round(Radio.batt/2.5*100)+'% · about '+fmtHM(Radio.batt)+' of radio time. The roof panel charges it in daylight.'})});
+    INT.push({p:W(-2.75,1.76,2.42),r:.2,inCab:1,label:()=>({hint:'Radio battery '+Math.round(Radio.batt/3.5*100)+'% · about '+fmtHM(Radio.batt)+' of radio time. The roof panel charges it in daylight.'})});
     FOODS.forEach((f,i)=>{const c=this.canP[i];INT.push({p:W(c[0],c[1]+.056,c[2]),r:.065,inCab:1,label:()=>{
         if(!this.canOn[i])return null;const h=SV.held;if(!h)return 'Take the can of '+f[0];if(h.type==='can'&&!h.opened)return 'Swap for the '+f[0];return null;},
       act:()=>{const h=SV.held;if(h&&h.type==='can')this.canOn[h.i]=true;this.canOn[i]=false;SV.held={type:'can',i,opened:false};Sound.clink();}});});
@@ -1945,12 +1950,12 @@ Object.assign(Cabin,{dirty:false,basin:0,trash:0,
     // pump with a carryable bucket
     INT.push({p:W(1.4,1.05,-4.4),r:.32,label:()=>{const h=SV.held;if(h&&h.type==='bucket')return 'Set the bucket under the spout';
         if(ICE.uIce.value>.5)return {hint:'The pump is frozen solid'};if(!Pump.at)return {hint:'The bucket is missing. You left it somewhere.'};
-        if(Pump.fill>=1)return 'Drink from the bucket';return 'Pump water into the bucket';},
+        if(Pump.fill>=1)return {hint:'The bucket is full. Pick it up and carry it inside.'};return 'Pump water into the bucket';},
       act:()=>{const h=SV.held;if(h&&h.type==='bucket'){Pump.at=true;Pump.fill=h.fill;SV.held=null;Sound.clink();return;}
-        if(!Pump.at||ICE.uIce.value>.5)return;if(Pump.fill>=1){Pump.fill=0;Sound.noise(.4,500,.6,.15,'lowpass');SV.say('Ice-cold well water. You feel more awake.',2600);stamina=100;return;}
+        if(!Pump.at||ICE.uIce.value>.5||Pump.fill>=1)return;
         Pump.anim=1.2;Pump.fill=Math.min(1,Pump.fill+.34);Sound.noise(.5,600,1,.18);setTimeout(()=>Sound.noise(.7,900,.5,.15,'lowpass'),300);}});
-    INT.push({p:W(1.72,.3,-4.4),r:.22,off:()=>!Pump.at,label:()=>SV.held?null:(Pump.fill>=1?'Pick up the bucket of water':Pump.fill>0?'Pick up the bucket (partly full)':'Pick up the empty bucket'),
-      act:()=>{SV.held={type:'bucket',fill:Pump.fill};Pump.at=false;Pump.fill=0;Sound.clink();}});
+    INT.push({p:W(1.72,.35,-4.4),r:.34,off:()=>!Pump.at||Pump.fill<1,label:()=>SV.held?{hint:'Your hands are full. Put down what you are holding first.'}:(Pump.fill>=1?'Pick up the bucket of water':Pump.fill>0?'Pick up the bucket (partly full)':'Pick up the empty bucket'),
+      act:()=>{if(SV.held)return;SV.held={type:'bucket',fill:Pump.fill};Pump.at=false;Pump.fill=0;Sound.clink();SV.say('Carry it inside and pour it into the wash basin on the counter.',3000);}});
   }
 });
 Object.assign(Pump,{at:true});
@@ -1962,7 +1967,7 @@ Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,
   seenAlert(){this.say('It has seen you. RUN!',2600);Hunt.dread=1;Hunt.static=Math.max(Hunt.static,.8);},
   reset(){Object.assign(this,{dead:false,won:false,gt:16,wood:0,woodTotal:0,matches:false,held:null,ate:false,found:false,everLit:false,eatenName:'',expo:0,cold:0,vy:0,said:{},warnedLow:false,lastHud:'',lastPrompt:'',
       day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,campGone:false,nightDone:-1,paused:false,shedSeen:false,hungerWarned:0});
-    this.seat=null;Radio.close();Radio.power=false;Radio.want=false;Radio.batt=2.5;Pump.fill=0;Pump.at=true;
+    this.seat=null;Radio.close();Radio.power=false;Radio.want=false;Radio.batt=3.5;Pump.fill=0;Pump.at=true;
     Cabin.reset();Cabin.dirty=false;Cabin.basin=0;Cabin.trash=0;Cabin.bowlFood=null;Wood.reset();Smoke.reset();Shed.reset();Hunting.reset();this.setLantern(false,true);setFast(false);ICE.uIce.value=0;ICE.uFront.value=400;
     if(Hunt.state!=='dormant')Hunt.despawn();Hunt.static=0;Hunt.dread=0;stamina=100;$('frostfx').style.opacity=0;},
   tick(dt){const g=this.g2(),storm=g>=26&&g<30;const rate=(storm?1/67.5:1/135)*(fast?8:1);this.dgt=0;
@@ -1993,7 +1998,7 @@ Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,
     if(Cabin.fuel>=.3)this.warnedLow=false;
     // radio battery: 2.5 hours of radio time, the roof panel charges it in daylight
     if(this.dgt>0){if(Radio.power){Radio.batt-=this.dgt;if(Radio.batt<=0){Radio.batt=0;Radio.power=false;Radio.close();this.say('The radio battery is flat. The solar panel will charge it in daylight.',4000);}}
-      if(dayAmt>.4&&this.gale<.1)Radio.batt=Math.min(2.5,Radio.batt+this.dgt*.7);}
+      if(dayAmt>.4&&this.gale<.1)Radio.batt=Math.min(3.5,Radio.batt+this.dgt*.9);}
     if(Radio.want&&!Radio.power&&Cabin.cableT>=1&&Radio.batt>.05)Radio.power=true;
     if(this.on&&!this.dead&&!this.paused){
       // hunger: eat every 3 hours
@@ -2040,7 +2045,7 @@ Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,
     if(html!==this.lastHud){this.lastHud=html;$('obj').innerHTML=html;}}
 });
 Object.assign(Cabin,{
-  update4(dt){if(!this.meterBar)return;const b=Radio.batt/2.5;this.meterBar.scale.x=Math.max(.001,b);this.meterBar.material.color.setHex(b>.5?0x4ad66d:b>.2?0xe0b34a:0xd9473a);
+  update4(dt){if(!this.meterBar)return;const b=Radio.batt/3.5;this.meterBar.scale.x=Math.max(.001,b);this.meterBar.material.color.setHex(b>.5?0x4ad66d:b>.2?0xe0b34a:0xd9473a);
     this.basinWater.visible=this.basin>0;this.basinWater.position.y=1.43+this.basin*.018;this.basinBottom.visible=this.basin===0;
     const h=SV.held;this.heldMeat.visible=!!(h&&h.type==='meat');if(h&&h.type==='meat')this.heldMeat.children[0].material.color.setHex(h.kind==='duck'?0xc0675a:0x9a2a2a);
     this.heldBucket.visible=!!(h&&h.type==='bucket');this.heldBucketW.visible=!!(h&&h.type==='bucket'&&h.fill>.3);
