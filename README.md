@@ -166,6 +166,7 @@ The Rootwalker still lives in the Blackwood, so keep away.
 | Scroll wheel | Zoom in / out (Z resets) |
 | Stove button | Turn the wood burner crackle on or off |
 | Radio | Drag or scroll the knob, arrow keys tune and change band, Shift for big steps, Esc closes |
+| P or the Pause button | Pause and resume. Time, hunger, the fire, the Rootwalker and sound all stop, and the game saves. Esc also resumes, and switching away from the window pauses automatically. |
 | T | Speed up time |
 | 1 2 3 4 | Low, medium, Pi5 OC, high detail (title screen only; use the buttons during a game) |
 | H | Hide the overlay |
