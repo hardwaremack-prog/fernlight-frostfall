@@ -71,10 +71,10 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 
 ## Fishing and the old helicopter
 
-- **Fishing:** a fishing pole leans against the cabin porch. Take it, look out over open water and press E to cast. When the bobber dips, press E fast to reel in a speckled trout, then cook it in the bowl on the wood burner. You can't fish once the river freezes.
+- **Fishing:** a fishing pole leans against the cabin porch. Take it, look out over open water and press E to cast. When the bobber dips, press E fast to reel in a speckled trout, then cook it in the bowl on the wood burner, or press **Q** to eat it raw for half a meal. You can't fish once the river freezes.
 - **1:00 pm on day 2:** sunlight flashes off an old helicopter across the valley, and there are wrecked cars at the far end. The compass marks both.
 - **Salvage parts:** take a car battery, a jerry can of fuel and a box of spark plugs from the three wrecks.
-- **Fit the parts** to the helicopter, then start the engine. When the rotor spools up you're flying: W forward, S back, A and D to turn, Space to climb and C to descend. Get low over dry ground and press E to land. There's fuel for a short flight.
+- **Fit the parts** to the helicopter, then start the engine. When the rotor spools up you're flying: W forward, S back, A and D to turn, Space to climb, and C (or Q or Ctrl) to descend. Get low over dry ground and press E to land. There's fuel for a short flight. Hollis kept a **spare jerry can** hidden behind an old stump near the helicopter. Find it and pour it in for more flying time.
 
 | | |
 |---|---|
@@ -124,6 +124,7 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 - **9:30 am:** the siren sounds again. **9:33 am:** ground zero. On the TV, the feed whites out and the sensor blooms as the fireball turns into a rolling, orange-lit mushroom cloud with condensation rings and a dust surge. The shockwave knocks out the signal, and when the picture comes back it's torn, grainy and shaking, with fires burning across the flattened valley.
 - About ten minutes later the feed dies, the screen goes dark, and it's **game over**. The game restarts on its own.
 - If you're still outside at 9:33, you won't make it.
+- **The story:** after the ending, **Read the story** explains everything: who lit the bonfire you saw when you arrived, who the voices on the radio were, where the helicopter and wrecked cars came from, and why the missiles were launched. Once you've reached the ending, it's also on the title screen.
 
 | | |
 |---|---|
@@ -168,6 +169,8 @@ The Rootwalker still lives in the Blackwood, so keep away.
 | Stove button | Turn the wood burner crackle on or off |
 | Radio | Drag or scroll the knob, arrow keys tune and change band, Shift for big steps, Esc closes |
 | P or the Pause button | Pause and resume. Time, hunger, the fire, the Rootwalker and sound all stop, and the game saves. Esc also resumes, and switching away from the window pauses automatically. |
+| X or the Tool button | Switch what's in your hand: bare hands, the axe (for hunting) or the fishing pole (for fishing) |
+| Q | Eat a raw trout you're holding (half as filling) |
 | T | Speed up time |
 | 1 2 3 4 | Low, medium, Pi5 OC, high detail (title screen only; use the buttons during a game) |
 | H | Hide the overlay |

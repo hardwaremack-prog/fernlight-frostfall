@@ -193,6 +193,7 @@ body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{di
     <input id="tod" type="range" min="0" max="1000" value="700" aria-label="Time of day">
     <button id="bFast" aria-pressed="false" title="Speed up time (T)">Fast</button>
     <button id="bPause" aria-pressed="false" title="Pause the game (P)">Pause</button>
+    <button id="bTool" aria-pressed="false" title="Switch tool: hands, axe, fishing pole (X)">Tool</button>
   </div>
   <div class="sep"></div>
   <div class="grp" id="qgrp">
@@ -224,7 +225,7 @@ body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{di
     <li>Be inside with the door shut by 2:00 am, and keep the fire going until dawn</li>
     <li>Eat every 3 hours. Wash your bowl, bin your cans, and survive more nights to level up</li>
   </ul>
-  <div class="row"><button id="bContinue" class="btn-main" hidden>Continue</button><button id="bBegin" class="btn-main">Begin the night</button><button id="bFree" class="btn-ghost">Free roam</button></div>
+  <div class="row"><button id="bContinue" class="btn-main" hidden>Continue</button><button id="bBegin" class="btn-main">Begin the night</button><button id="bFree" class="btn-ghost">Free roam</button><button id="bStory" class="btn-ghost" hidden>The story</button></div>
   <p class="fine">E or click to use things · L lantern · Shift sprint · Space jump · stay out of the Blackwood</p>
 </div></div>
 <div id="waterfx"></div>
@@ -243,6 +244,7 @@ body:not(.survive) #obj,body:not(.survive) #compass,body:not(.survive) #xhair{di
   <h2 id="endTitle"></h2><p id="endText"></p><ul id="endList"></ul>
   <button id="endBtn" class="btn-main"></button>
   <button id="endLoad" class="btn-ghost" hidden style="margin-left:8px">Load last save</button>
+  <button id="endStory" class="btn-ghost" hidden style="margin-left:8px">Read the story</button>
 </div></div>
 <div id="caught" hidden><div>
   <h2>The Rootwalker caught you.</h2>
@@ -2046,7 +2048,7 @@ Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,
       if(this.gale>.3&&!Cabin.inside&&(this.howl-=dt)<0){this.howl=1.5+Math.random()*2.5;if(Sound.on){const t=Sound.ctx.currentTime,f=420+Math.random()*380;Sound.tone(f,f*(.7+Math.random()*.5),t,2.2,.035*this.gale,'sine');}}
     }
     $('frostfx').style.opacity=Math.min(1,Math.max(this.expo,this.cold*.9,this.dead?1:0)).toFixed(3);
-    Cabin.update(dt);Cabin.update4(dt);Cabin.update5();Cabin.update6();Cabin.update7();CanArt.update();Nuke.update(dt);Extras.update(dt);Save.update(dt);Knock.update();Smoke.update(dt);Storm.update();Wood.update();Radio.update(dt);Pump.update(dt);Music.update();
+    Cabin.update(dt);Cabin.update4(dt);Cabin.update5();Cabin.update6();Cabin.update7();CanArt.update();Nuke.update(dt);Extras.update(dt);Save.update(dt);Knock.update();Tool.update();Smoke.update(dt);Storm.update();Wood.update();Radio.update(dt);Pump.update(dt);Music.update();
     {const f=camera.fov+(this.zoomT-camera.fov)*Math.min(1,dt*10);if(Math.abs(f-camera.fov)>.01){camera.fov=f;camera.updateProjectionMatrix();}}
     $('waterfx').style.opacity=this.swim?1:0;$('seen').hidden=!(Hunt.state==='hunt'&&!Hunt.caught);
     if(this.campOut>0){fire.light.intensity*=1-this.campOut;const v=this.campOut<.6;fire.flames.forEach(f=>f.visible=v);fire.glow.visible=v;fire.embers.visible=v;}
@@ -2167,7 +2169,7 @@ RFX.update=function(dt){const on=Radio.open&&Radio.power&&Radio.cur&&Radio.cur.t
 /* ---------- reader overlay ---------- */
 const Reader={open:false,lib:false,b:0,p:0,
   showLib(){this.lib=true;this.open=true;$('reader').hidden=false;try{document.exitPointerLock&&document.exitPointerLock();}catch(e){}
-    $('rdBody').innerHTML='<h3>Off-grid survival shelf</h3><p class="rd-sub">Pick a book to take. Sit on the couch to read it.</p><ol class="rd-list">'+BOOKS.map((b,i)=>`<li><button data-b="${i}">${b.t}</button></li>`).join('')+'</ol>';
+    $('rdBody').innerHTML='<h3>Off-grid survival shelf</h3><p class="rd-sub">Pick a book to take. Sit on the couch to read it.</p><ol class="rd-list">'+BOOKS.map((b,i)=>b.hidden?'':`<li><button data-b="${i}">${b.t}</button></li>`).join('')+'</ol>';
     $('rdNav').hidden=true;$('rdBody').querySelectorAll('button[data-b]').forEach(e=>e.onclick=()=>{SV.held={type:'book',i:+e.dataset.b};Sound.clink();this.close();SV.say('You take "'+BOOKS[+e.dataset.b].t+'". Sit on the couch to read it.',3000);});},
   openBook(i){this.lib=false;this.open=true;this.b=i;this.p=0;$('reader').hidden=false;$('rdNav').hidden=false;try{document.exitPointerLock&&document.exitPointerLock();}catch(e){}this.render();},
   render(){const b=BOOKS[this.b];$('rdBody').innerHTML=`<h3>${b.t}</h3><p class="rd-page">${b.pages[this.p]}</p>`;$('rdNum').textContent='Page '+(this.p+1)+' of '+b.pages.length;
@@ -2773,7 +2775,7 @@ const Nuke={alert:false,phase:0,heard:0,lookShed:false,box:0,emerge:0,doorT:0,in
   tvDies(){this.deadShown=true;this.staticT=2.2;setTimeout(()=>{this.tvScr.visible=false;this.tv=false;this.tvOv.visible=true;this.ox.fillStyle='#000';this.ox.fillRect(0,0,384,216);this.otex.needsUpdate=true;
       setTimeout(()=>this.gameOver('Game over','The antenna feed lasted ten minutes after the blast. Then the screen went dark, and so did the valley.'),2600);},2200);},
   gameOver(title,text){if(SV.dead)return;SV.dead=true;Radio.close();SV.seat=null;
-    setTimeout(()=>{SV.showEnd(title,text,[],'Start again',()=>{this.reset();SV.restart();});const me=++this.goN;setTimeout(()=>{if(SV.dead&&this.goN===me&&!$('endcard').hidden){this.reset();SV.restart();}},12000);},1200);},
+    setTimeout(()=>{SV.showEnd(title,text,[],'Start again',()=>{this.reset();SV.restart();});const me=++this.goN;const chk=()=>{if(!(SV.dead&&this.goN===me&&!$('endcard').hidden))return;if(Reader.open){setTimeout(chk,4000);return;}this.reset();SV.restart();};setTimeout(chk,15000);},1200);},
   goN:0,
   drawOverlay(){const x=this.ox;const t=this.blastT;
     if(!this.tv)return;
@@ -2976,6 +2978,83 @@ const Knock={done:{},
 };
 {const _r=SV.reset.bind(SV);SV.reset=function(){_r();Knock.done={};};}
 
+/* ================= FROSTFALL round 13: tools, raw fish, spare fuel, heli descend fix, the story ================= */
+/* ---------- tool in hand: hands / axe / fishing pole ---------- */
+const Tool={cur:'none',
+  owned(){const o=['none'];if(SV.axe)o.push('axe');if(Extras.pole)o.push('pole');return o;},
+  name(t){return {none:'Hands',axe:'Axe',pole:'Fishing pole'}[t];},
+  cycle(){const o=this.owned();if(o.length<2){toast('You have no tools yet. The axe is in the shed, the fishing pole on the porch.',2600);return;}
+    const i=o.indexOf(this.cur);this.cur=o[(i+1)%o.length];this.sync();toast('In hand: '+this.name(this.cur),1200);},
+  sync(){const b=$('bTool');if(b){b.textContent=this.cur==='none'?'Tool':this.cur==='axe'?'Axe':'Pole';b.setAttribute('aria-pressed',this.cur!=='none');}},
+  update(){if(this.cur==='axe'&&!SV.axe)this.cur='none';if(this.cur==='pole'&&!Extras.pole)this.cur='none';
+    if(!this.wasAxe&&SV.axe){this.cur='axe';this.sync();}if(!this.wasPole&&Extras.pole){this.cur='pole';this.sync();}this.wasAxe=SV.axe;this.wasPole=Extras.pole;
+    if(Cabin.heldAxe)Cabin.heldAxe.visible=Cabin.heldAxe.visible&&this.cur==='axe';
+    if(Extras.rod)Extras.rod.visible=Extras.rod.visible&&this.cur==='pole';this.sync();}
+};
+$('bTool').onclick=()=>Tool.cycle();
+/* ---------- the story ---------- */
+const STORY={t:'The Glass Comes at Two',hidden:true,pages:[
+ 'The letter came three weeks ago, in your grandfather\'s square, careful hand. "Come up to the cabin before the first frost. Bring nothing. I will light a fire so you can find the trail. Do not stay out after two." Walter Hollis had not written to anyone in nine years. You drove north the same night.',
+ 'The bonfire you saw when you first arrived was his. He built it in the meadow below the ridge at four in the afternoon, the way he used to for hunters lost in the fog, so you would know where to climb. Then he walked down to Ridgeway Dam to help the crew there. He knew the gale was coming. He trusted you to follow the light and find the cabin. At two in the morning the gale put the fire out, and the meadow turned to glass.',
+ 'Fernlight Hollow was a timber town once. In the fifties the mill ran day and night and the dam lit three counties. The loggers would not cut the Blackwood. They said something walked between the roots there, tall and patient, and that it followed anyone who went in looking for firewood. Hollis never called it a story. He just told you to stay out.',
+ 'The Glass began in the far north. Magnetometers in Alaska and Siberia went wild. Every night, at two in the morning, a gale fell off the peaks so cold it froze sap inside the trees. Anything caught outside became part of the forest. Then each day the ice let go before noon, as if it were being called back. Nobody could explain it. The southern half of the world never froze at all.',
+ 'The voices on your radio were real people holding on. Hollis kept the 40 metre net going from the dam. Marla ran the 80 metre emergency net two counties over. Tom, VE7KQS, called from British Columbia every evening until his antenna iced over. Brother Amos preached on 1340 because he did not know what else to do. The night DJ on Last Light played old records from a basement so the frightened would have company. The Morse that said "the glass comes at two" came from the weather relay on the summit.',
+ 'Down south, the world kept talking. Dana in Perth, Marcelo in Buenos Aires and the crews at McMurdo and Rothera traded PSK31 messages across a warm half of the planet, wondering why the north had gone quiet. The Antarctic stations saw the same magnetic disturbance just before every freeze. In the end they were the ones who understood it best, and they were the farthest away.',
+ 'On the third night the freeze reached Murmansk and the cities of the Russian Arctic. Their satellites had watched a ring of light hang over an old research array on the ridge above Fernlight Hollow, the same place the summit relay sat. To frightened people in a cold command bunker, it looked like a weapon. That morning the aurora blinded their early-warning radars, a false track appeared on a screen, and someone decided they could not wait to be sure. The missiles were aimed at the array, and at the dam below it.',
+ 'The helicopter belonged to Hollis\'s son, who flew fire patrol over the valley in the seventies and set it down in that clearing the last summer he flew. The wrecked cars belonged to families who tried to drive out on the first night of the Glass. Hollis dug the shelter into the mountain in 1962, the autumn of the missile crisis. "We will need it someday," he said. His neighbours laughed. He wired the TV to the antenna tower himself.',
+ 'When the second siren sounded, Hollis went on the air one last time and told you where the box was. He was at the dam, where the missiles were aimed. You watched the feed until the battery line burned out. Somewhere above you the valley is ash and glass. Down here the bulb still hums. The southern stations are still calling CQ, CQ, CQ, waiting for anyone in the north to answer. Someday, when it is safe to climb out, you will.']};
+const Story={idx:-1,
+  unlocked(){try{return localStorage.getItem('frostfall-story')==='1';}catch(e){return false;}},
+  unlock(){try{localStorage.setItem('frostfall-story','1');}catch(e){}this.refresh();},
+  open(){if(this.idx<0){BOOKS.push(STORY);this.idx=BOOKS.length-1;}$('reader').style.zIndex=11;Reader.openBook(this.idx);$('reader').querySelector('.rd-top span').textContent='Story';},
+  refresh(){const b=$('bStory');if(b)b.hidden=!this.unlocked();}
+};
+$('bStory').onclick=()=>Story.open();{const _ob=Reader.openBook.bind(Reader);Reader.openBook=function(i){$('reader').querySelector('.rd-top span').textContent='Bookshelf';_ob(i);};}$('endStory').addEventListener('click',e=>{e.stopPropagation();Story.open();});
+/* ---------- raw fish, eaten on the spot ---------- */
+const RawFish={eat(){const h=SV.held;if(!h||h.type!=='meat'||h.kind!=='trout')return false;SV.held=null;SV.full=Math.min(100,SV.full+50);SV.starveT=0;Sound.eat();
+  SV.say('You eat the trout raw. Cold and slimy, but it is food. Only half as filling as a cooked meal.',4000);return true;}};
+/* ---------- key handling: C descends in the helicopter, X switches tool, Q eats raw fish ---------- */
+{const _k=SV.keydown.bind(SV);SV.keydown=function(e){
+  if(Extras.flying&&(e.code==='KeyC'||e.code==='KeyQ'||e.code==='ControlLeft')){keys.KeyC=true;e.preventDefault();return true;}
+  if(SV.on&&!Pause.on&&!Reader.open&&!Radio.open&&$('endcard').hidden){
+    if(e.code==='KeyX'&&!e.repeat){Tool.cycle();return true;}
+    if(e.code==='KeyQ'&&!e.repeat&&RawFish.eat())return true;}
+  return _k(e);};}
+addEventListener('keyup',e=>{if(e.code==='KeyQ'||e.code==='ControlLeft')keys.KeyC=false;});
+/* ---------- a hidden jerry can near the helicopter ---------- */
+const SpareFuel={state:0,
+  build(){const E=Extras,hp=E.hpos0||E.hpos;let best=null;for(let i=0;i<400;i++){const a=hash(i,501)*6.283,r=26+hash(i,502)*16,x=hp.x+Math.cos(a)*r,z=hp.z+Math.sin(a)*r,h=heightAt(x,z);
+      if(h<1.5||Math.abs(x-riverX(z))<riverW(z)+4)continue;const sc=forestAt(x,z)+Math.abs(heightAt(x+2,z)-heightAt(x-2,z));if(!best||sc<best[3])best=[x,z,h,sc];}
+    if(!best)best=[hp.x+30,hp.z,heightAt(hp.x+30,hp.z)];
+    const g=new THREE.Group();g.position.set(best[0],best[2],best[1]);g.rotation.y=hash(9,503)*6.28;scene.add(g);this.g=g;
+    const lam=new THREE.MeshLambertMaterial({vertexColors:true});
+    g.add(new THREE.Mesh(part([[new THREE.CylinderGeometry(.55,.7,.75,7).translate(.6,.37,0),0x5a4028],[new THREE.CylinderGeometry(.5,.5,.04,7).translate(.6,.76,0),0x8a6a40],
+      [new THREE.DodecahedronGeometry(.32,0).translate(-.55,.15,.35),0x8a8680],[new THREE.DodecahedronGeometry(.24,0).translate(-.4,.1,-.4),0x7a7670]]),addIce(lam)));
+    const can=new THREE.Mesh(part([[bx(-.12,.12,-.24,.24,-.09,.09),0x3e4a2c],[new THREE.CylinderGeometry(.03,.03,.1,6).translate(.08,.29,0),0x2a2a2a],[bx(-.1,.04,.24,.29,-.03,.03),0x323c24]]),lam);
+    can.position.set(0,.09,0);can.rotation.set(Math.PI/2,0,.3);g.add(can);this.can=can;
+    const p=new THREE.Vector3(best[0],best[2]+.25,best[1]);
+    INT.push({p,r:.45,max:3,off:()=>this.state!==0,label:()=>'Take the hidden jerry can',act:()=>{this.state=1;can.visible=false;Sound.thunk();SV.say('A full jerry can, stashed behind the stump. More fuel for the helicopter.',3600);}});
+    const h=Extras.hInt,L0=h.label,A0=h.act;
+    h.label=()=>{if(Extras.q&&Extras.inst()>=3&&!Extras.running){if(this.state===1&&Extras.fuel<.99)return 'Pour the spare jerry can into the tank';
+        if(Extras.fuel<=0)return {hint:'The tank is dry. Hollis always kept a spare can stashed somewhere close by.'};}return L0();};
+    h.act=()=>{if(Extras.q&&Extras.inst()>=3&&!Extras.running&&this.state===1&&Extras.fuel<.99){this.state=2;Extras.fuel=Math.min(1,Extras.fuel+.85);Extras.warned=0;Sound.pour();SV.say('Glug, glug. Fuel '+Math.round(Extras.fuel*100)+'%. Plenty for another flight.',3200);return;}
+      if(Extras.fuel<=0)return;A0();};},
+  reset(){this.state=0;if(this.can)this.can.visible=true;}
+};
+/* hooks */
+{const _b=Extras.build.bind(Extras);Extras.build=function(){_b();SpareFuel.build();
+  /* hunting needs the axe in hand */
+  INT.forEach(it=>{let l;try{l=it.label&&it.label();}catch(e){}if(typeof l==='string'&&/^Hunt the /.test(l)){const L=it.label,A=it.act;it.label=()=>Tool.cur==='axe'?L():{hint:'Switch to the axe to hunt (X)'};it.act=()=>{if(Tool.cur==='axe')A();};}});
+  /* fishing needs the pole in hand */
+  const cast=INT.find(it=>{try{const s=Extras.pole,o=Extras.fish,tg=Extras.tgtOK,fz=Extras.tgtFrozen,hd=SV.held;Extras.pole=true;Extras.fish='idle';Extras.tgtOK=true;Extras.tgtFrozen=false;SV.held=null;const l=it.label();Extras.pole=s;Extras.fish=o;Extras.tgtOK=tg;Extras.tgtFrozen=fz;SV.held=hd;return l==='Cast your fishing line';}catch(e){return false;}});
+  if(cast){const L=cast.label,A=cast.act;cast.label=()=>Tool.cur==='pole'?L():{hint:'Switch to the fishing pole to fish (X)'};cast.act=()=>{if(Tool.cur==='pole')A();};}
+  const _go=Nuke.gameOver.bind(Nuke);Nuke.gameOver=function(a,b){Story.unlock();_go(a,b);setTimeout(()=>{$('endStory').hidden=false;},1300);};};}
+{const _r=SV.reset.bind(SV);SV.reset=function(){_r();Tool.cur='none';Tool.wasAxe=false;Tool.wasPole=false;SpareFuel.reset();const es=$('endStory');if(es)es.hidden=true;};}
+{const _c=Save.collect.bind(Save);Save.collect=function(){const s=_c();s.ex.spare=SpareFuel.state;s.tool=Tool.cur;return s;};
+ const _a=Save.apply.bind(Save);Save.apply=function(s){_a(s);SpareFuel.state=s.ex.spare||0;if(SpareFuel.can)SpareFuel.can.visible=SpareFuel.state===0;Tool.wasAxe=SV.axe;Tool.wasPole=Extras.pole;Tool.cur=s.tool||'none';Tool.sync();};}
+{const _ih=Extras.invHtml.bind(Extras);Extras.invHtml=function(){let s=_ih();if(SV.on&&Tool.owned().length>1)s+='<br>In hand <b>'+Tool.name(Tool.cur)+'</b> (X to switch)';
+  const h=SV.held;if(h&&h.type==='meat'&&h.kind==='trout')s+='<br><b>Q</b> to eat the trout raw';if(SpareFuel.state===1)s+='<br>Spare jerry can <b>carried</b>';return s;};}
+
 /* ---------------- Main loop ---------------- */
 const frustum=new THREE.Frustum(),PM=new THREE.Matrix4();
 let last=performance.now(),acc=0,frames=0,elapsed=0;
@@ -3034,7 +3113,7 @@ function loop(now){
   updateSky();updateTour(0);
   renderer.compile(scene,camera);
   requestAnimationFrame(t=>{last=t;loop(t);});
-  setTimeout(()=>{$('loading').classList.add('done');$('intro').hidden=false;Save.refresh();let rs=false;try{rs=sessionStorage.getItem('frostfall-resume')==='1';sessionStorage.removeItem('frostfall-resume');}catch(e){}if(rs&&Save.has())Save.continue();},150);
+  setTimeout(()=>{$('loading').classList.add('done');$('intro').hidden=false;Save.refresh();Story.refresh();let rs=false;try{rs=sessionStorage.getItem('frostfall-resume')==='1';sessionStorage.removeItem('frostfall-resume');}catch(e){}if(rs&&Save.has())Save.continue();},150);
 })().catch(err=>{loadMsg.textContent='Something went wrong: '+err.message;console.error(err);});
 })();
 </script>
