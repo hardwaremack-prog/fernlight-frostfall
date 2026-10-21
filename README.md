@@ -136,6 +136,7 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 - **At 2:00 am** the gale arrives. Outside you have only seconds. Leaving the cabin door open lets the cold in.
 - **Soon after**, the forest crystallizes into ice from the peaks down: trees, grass, rocks, the cabin and then the river.
 - **Inside the cabin**, frost creeps across the windows and the door.
+- **3:30 am and 4:30 am:** something knocks on the cabin door, three slow knocks and then three more. It's loudest inside, and the cabin shakes a little. Don't open it.
 - **If the wood burner goes out** during the storm, the cold finds you. Each log burns about an hour.
 - **Make it to dawn** and you can walk out into a valley frozen in glass.
 

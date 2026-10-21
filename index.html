@@ -2046,7 +2046,7 @@ Object.assign(SV,{day:1,full:100,starveT:0,axe:false,hunted:false,ateMeat:false,
       if(this.gale>.3&&!Cabin.inside&&(this.howl-=dt)<0){this.howl=1.5+Math.random()*2.5;if(Sound.on){const t=Sound.ctx.currentTime,f=420+Math.random()*380;Sound.tone(f,f*(.7+Math.random()*.5),t,2.2,.035*this.gale,'sine');}}
     }
     $('frostfx').style.opacity=Math.min(1,Math.max(this.expo,this.cold*.9,this.dead?1:0)).toFixed(3);
-    Cabin.update(dt);Cabin.update4(dt);Cabin.update5();Cabin.update6();Cabin.update7();CanArt.update();Nuke.update(dt);Extras.update(dt);Save.update(dt);Smoke.update(dt);Storm.update();Wood.update();Radio.update(dt);Pump.update(dt);Music.update();
+    Cabin.update(dt);Cabin.update4(dt);Cabin.update5();Cabin.update6();Cabin.update7();CanArt.update();Nuke.update(dt);Extras.update(dt);Save.update(dt);Knock.update();Smoke.update(dt);Storm.update();Wood.update();Radio.update(dt);Pump.update(dt);Music.update();
     {const f=camera.fov+(this.zoomT-camera.fov)*Math.min(1,dt*10);if(Math.abs(f-camera.fov)>.01){camera.fov=f;camera.updateProjectionMatrix();}}
     $('waterfx').style.opacity=this.swim?1:0;$('seen').hidden=!(Hunt.state==='hunt'&&!Hunt.caught);
     if(this.campOut>0){fire.light.intensity*=1-this.campOut;const v=this.campOut<.6;fire.flames.forEach(f=>f.visible=v);fire.glow.visible=v;fire.embers.visible=v;}
@@ -2959,6 +2959,22 @@ $('pSave').onclick=()=>{if(Save.write())$('pauseInfo').textContent='Saved · Day
   return _k(e);};}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&SV.on&&!SV.dead)Pause.set(true);});
 {const _loop=loop;loop=function(now){if(Pause.on){requestAnimationFrame(loop);last=now;renderer.render(scene,camera);return;}_loop(now);};}
+
+/* ---------- knocks at the door in the dead of night ---------- */
+const Knock={done:{},
+  hit(t,vol){const c=Sound.ctx,s=c.createBufferSource(),bp=c.createBiquadFilter(),g=c.createGain();s.buffer=Sound.white;bp.type='bandpass';bp.frequency.value=260;bp.Q.value=1.4;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.004);g.gain.exponentialRampToValueAtTime(.001,t+.16);s.connect(bp).connect(g).connect(Sound.master);s.start(t,Math.random()*.5,.2);
+    const o=c.createOscillator(),og=c.createGain();o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(62,t+.12);og.gain.setValueAtTime(vol*.9,t);og.gain.exponentialRampToValueAtTime(.001,t+.18);
+    o.connect(og).connect(Sound.master);o.start(t);o.stop(t+.2);},
+  play(){const d=camera.position.distanceTo(Cabin.doorW),vol=clamp(1.1-d/35,0,1)*(Cabin.inside?1:.7);
+    if(Cabin.inside||d<12)SV.shake=Math.max(SV.shake,.25);
+    if(!Sound.on||!Sound.ctx||vol<=0)return;const t=Sound.ctx.currentTime+.05;
+    [0,.42,.84,2.3,2.62,2.94].forEach((o,i)=>this.hit(t+o+(Math.random()-.5)*.04,vol*(i===2||i===5?1:.85)));},
+  update(){if(!SV.on||SV.dead||SV.paused)return;const g=SV.g2();
+    for(const [at,msg] of [[27.5,'3:30 am. Someone is knocking on the door.'],[28.5,'4:30 am. The knocking again. Slow. Patient.']]){const k=SV.day+':'+at;
+      if(g>=at&&g<at+.2&&!this.done[k]){this.done[k]=1;this.play();setTimeout(()=>SV.say(msg,4500),300);}}}
+};
+{const _r=SV.reset.bind(SV);SV.reset=function(){_r();Knock.done={};};}
 
 /* ---------------- Main loop ---------------- */
 const frustum=new THREE.Frustum(),PM=new THREE.Matrix4();
