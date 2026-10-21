@@ -74,7 +74,7 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 - **Fishing:** a fishing pole leans against the cabin porch. Take it, look out over open water and press E to cast. When the bobber dips, press E fast to reel in a speckled trout, then cook it in the bowl on the wood burner, or press **Q** to eat it raw for half a meal. You can't fish once the river freezes.
 - **1:00 pm on day 2:** sunlight flashes off an old helicopter across the valley, and there are wrecked cars at the far end. The compass marks both.
 - **Salvage parts:** take a car battery, a jerry can of fuel and a box of spark plugs from the three wrecks.
-- **Fit the parts** to the helicopter, then start the engine. When the rotor spools up you're flying: W forward, S back, A and D to turn, Space to climb, and C (or Q or Ctrl) to descend. Get low over dry ground and press E to land. There's fuel for a short flight. Hollis kept a **spare jerry can** hidden behind an old stump near the helicopter. Find it and pour it in for more flying time.
+- **Fit the parts** to the helicopter, then start the engine. When the rotor spools up you're flying: W forward, S back, A and D to turn, Space to climb, and C (or Q or Ctrl) to descend. Get low over dry ground and press E to land. There's fuel for a short flight. Hollis kept a **spare jerry can** tucked in a corner of the shed behind the cabin (it opens on day 2). Carry it to the helicopter and pour it in for more flying time.
 
 | | |
 |---|---|
