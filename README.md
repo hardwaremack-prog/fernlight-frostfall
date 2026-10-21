@@ -1,6 +1,6 @@
 # Fernlight Frostfall
 
-A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fernlight-hollow), built for an **overclocked Raspberry Pi 5 / 500**. It's one HTML file that runs offline in Chromium with no install.
+A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fernlight-hollow), initially designed for an **overclocked Raspberry Pi 500**. It's one HTML file that runs offline in Chromium with no install.
 
 ![Title screen](screenshots/intro.jpg)
 
@@ -173,7 +173,7 @@ The Rootwalker still lives in the Blackwood, so keep away.
 
 **Free roam** on the title screen gives you the original flying explorer with no storm.
 
-## Tuned for an overclocked Pi 5 / 500
+## Initially designed for an overclocked RPi 500
 
 - When it detects the Pi's VideoCore GPU, it picks the **Pi5 OC** preset. That means more trees, grass, flowers and snow than Medium.
 - Render resolution still adapts on its own to hold a smooth frame rate.
