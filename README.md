@@ -121,7 +121,7 @@ A survival version of [Fernlight Hollow](https://github.com/hardwaremack-prog/fe
 - **Get on the ham radio** and check the **2m band**. Five stations are on the air: the county emergency repeater (145.110), State Patrol dispatch (146.940), the valley emergency net (147.330), the dam crew (146.520) and Old Hollis (145.490). They all say the same thing: ICBMs from Russia are inbound and you need to take cover.
 - **Look behind the shed.** A steel box is bolted to the back wall. Open it and press the red button, and a huge blast door grinds out of the mountain behind you.
 - **Inside the bunker** a single bulb hangs from the ceiling over a couch, and a TV wired to a car battery shows a live feed from the camera on top of your antenna tower.
-- **9:30 am:** the siren sounds again. **9:33 am:** ground zero. Watch on the TV as the blast wave erases the valley.
+- **9:30 am:** the siren sounds again. **9:33 am:** ground zero. On the TV, the feed whites out and the sensor blooms as the fireball turns into a rolling, orange-lit mushroom cloud with condensation rings and a dust surge. The shockwave knocks out the signal, and when the picture comes back it's torn, grainy and shaking, with fires burning across the flattened valley.
 - About ten minutes later the feed dies, the screen goes dark, and it's **game over**. The game restarts on its own.
 - If you're still outside at 9:33, you won't make it.
 
